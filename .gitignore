@@ -5,6 +5,7 @@
 cache/
 dataset/
 exp_output/
+.venv/
 
 # checkpoint paths
 *.npz
