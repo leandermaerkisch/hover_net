@@ -11,65 +11,41 @@ import psutil
 
 
 ####
-class SerializeFileList(data.IterableDataset):
+class SerializeFileList(data.Dataset):
     """Read a single file as multiple patches of same shape, perform the padding beforehand."""
 
-    def __init__(self, img_list, patch_info_list, patch_size, preproc=None):
+    def __init__(self, img_list, patch_info_list, patch_size):
         super().__init__()
         self.patch_size = patch_size
 
         self.img_list = img_list
         self.patch_info_list = patch_info_list
+        
+        if not self.patch_info_list:
+            raise ValueError("patch_info_list is empty")
+        
+        print(f"SerializeFileList initialized with {len(self.patch_info_list)} patches")
 
-        self.worker_start_img_idx = 0
-        # * for internal worker state
-        self.curr_img_idx = 0
-        self.stop_img_idx = 0
-        self.curr_patch_idx = 0
-        self.stop_patch_idx = 0
-        self.preproc = preproc
-        return
+    def __getitem__(self, idx):
+        patch_info = self.patch_info_list[idx]
+        global_curr_img_idx = patch_info[-1]
+        curr_img = self.img_list[global_curr_img_idx]
+
+        # Extract patch
+        start_h, start_w = patch_info[0], patch_info[1]
+        end_h = start_h + self.patch_size
+        end_w = start_w + self.patch_size
+        patch = curr_img[start_h:end_h, start_w:end_w]
+
+        return patch, patch_info
+
+    def __len__(self):
+        return len(self.patch_info_list)
 
     def __iter__(self):
-        worker_info = torch.utils.data.get_worker_info()
-        if worker_info is None:  # single-process data loading, return the full iterator
-            self.stop_img_idx = len(self.img_list)
-            self.stop_patch_idx = len(self.patch_info_list)
-            return self
-        else:  # in a worker process so split workload, return a reduced copy of self
-            per_worker = len(self.patch_info_list) / float(worker_info.num_workers)
-            per_worker = int(math.ceil(per_worker))
-
-            global_curr_patch_idx = worker_info.id * per_worker
-            global_stop_patch_idx = global_curr_patch_idx + per_worker
-            self.patch_info_list = self.patch_info_list[
-                global_curr_patch_idx:global_stop_patch_idx
-            ]
-            self.curr_patch_idx = 0
-            self.stop_patch_idx = len(self.patch_info_list)
-            # * check img indexer, implicit protocol in infer.py
-            global_curr_img_idx = self.patch_info_list[0][-1]
-            global_stop_img_idx = self.patch_info_list[-1][-1] + 1
-            self.worker_start_img_idx = global_curr_img_idx
-            self.img_list = self.img_list[global_curr_img_idx:global_stop_img_idx]
-            self.curr_img_idx = 0
-            self.stop_img_idx = len(self.img_list)
-            return self  # does it mutate source copy?
-
-    def __next__(self):
-
-        if self.curr_patch_idx >= self.stop_patch_idx:
-            raise StopIteration  # when there is nothing more to yield
-        patch_info = self.patch_info_list[self.curr_patch_idx]
-        img_ptr = self.img_list[patch_info[-1] - self.worker_start_img_idx]
-        patch_data = img_ptr[
-            patch_info[0] : patch_info[0] + self.patch_size,
-            patch_info[1] : patch_info[1] + self.patch_size,
-        ]
-        self.curr_patch_idx += 1
-        if self.preproc is not None:
-            patch_data = self.preproc(patch_data)
-        return patch_data, patch_info
+        print(f"Starting iteration over {len(self.patch_info_list)} patches")
+        for idx in range(len(self)):
+            yield self.__getitem__(idx)
 
 
 ####

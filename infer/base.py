@@ -21,6 +21,12 @@ from run_utils.utils import convert_pytorch_checkpoint
 ####
 class InferManager(object):
     def __init__(self, **kwargs):
+        print("InferManager initialization arguments:")
+        for key, value in kwargs.items():
+            print(f"{key}: {value}")
+        self.batch_size = kwargs.get('batch_size', 1)  # Default to 1 if not provided
+        print(f"InferManager initialized with batch_size: {self.batch_size}")
+
         self.run_step = None
         for variable, value in kwargs.items():
             self.__setattr__(variable, value)
@@ -67,7 +73,9 @@ class InferManager(object):
 
         net.load_state_dict(saved_state_dict, strict=True)
         net = torch.nn.DataParallel(net)
-        net = net.to("cuda")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        net = net.to(device)
+        print(f"Using device: {device}")
 
         module_lib = import_module("models.hovernet.run_desc")
         run_step = getattr(module_lib, "infer_step")

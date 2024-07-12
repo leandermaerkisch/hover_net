@@ -178,6 +178,16 @@ if __name__ == '__main__':
     
     if sub_cmd == 'tile':
         from infer.tile import InferManager
+
+        # After parsing arguments
+        print("Parsed arguments:")
+        for key, value in args.items():
+            print(f"{key}: {value}")
+
+        # Before creating InferManager
+        run_args['batch_size'] = int(args['batch_size'])
+        print(f"run_args batch_size: {run_args['batch_size']}")
+
         infer = InferManager(**method_args)
         infer.process_file_list(run_args)
     else:

@@ -73,7 +73,7 @@ def _prepare_patching(img, window_size, mask_size, return_src_top_corner=False):
     padb = last_h + win_size - im_h
     padr = last_w + win_size - im_w
 
-    img = np.lib.pad(img, ((padt, padb), (padl, padr), (0, 0)), "reflect")
+    img = np.pad(img, ((padt, padb), (padl, padr), (0, 0)), mode="reflect")
 
     # generating subpatches index from orginal
     coord_y = np.arange(0, last_h, step_size, dtype=np.int32)
@@ -151,12 +151,18 @@ class InferManager(base.InferManager):
         """
         Process a single image tile < 5000x5000 in size.
         """
+        print(f"process_file_list called with batch_size: {getattr(self, 'batch_size', 'Not set')}")
+        if not hasattr(self, 'batch_size') or self.batch_size <= 0:
+            self.batch_size = run_args.get('batch_size', 1)  # Try to get from run_args, default to 1
+            print(f"batch_size set to: {self.batch_size}")
+
+
         for variable, value in run_args.items():
             self.__setattr__(variable, value)
         assert self.mem_usage < 1.0 and self.mem_usage > 0.0
 
         # * depend on the number of samples and their size, this may be less efficient
-        patterning = lambda x: re.sub("([\[\]])", "[\\1]", x)
+        patterning = lambda x: re.sub(r"([\[\]])", r"[\1]", x)
         file_path_list = glob.glob(patterning("%s/*" % self.input_dir))
         file_path_list.sort()  # ensure same order
         assert len(file_path_list) > 0, 'Not Detected Any Files From Path'
@@ -281,10 +287,21 @@ class InferManager(base.InferManager):
                 # TODO: refactor to explicit protocol
                 cache_image_info_list.append([src_shape, len(patch_info), top_corner])
 
+            print(f"Number of images: {len(cache_image_list)}")
+            print(f"Number of patch infos: {len(cache_patch_info_list)}")
+            if cache_patch_info_list:
+                print(f"Sample patch info: {cache_patch_info_list[0]}")
+            else:
+                print("Warning: cache_patch_info_list is empty")
+
             # * apply neural net on cached data
             dataset = SerializeFileList(
                 cache_image_list, cache_patch_info_list, self.patch_input_shape
             )
+            print(f"Dataset length: {len(dataset)}")
+
+            if self.batch_size <= 0:
+                raise ValueError(f"batch_size should be a positive integer, but got {self.batch_size}")
 
             dataloader = data.DataLoader(
                 dataset,

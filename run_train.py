@@ -216,7 +216,10 @@ class TrainManager(Config):
 
             # * extremely slow to pass this on DGX with 1 GPU, why (?)
             net_desc = DataParallel(net_desc)
-            net_desc = net_desc.to("cuda")
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            net_desc = net_desc.to(device)
+            print(f"Using device: {device}")
+
             # print(net_desc) # * dump network definition or not?
             optimizer, optimizer_args = net_info["optimizer"]
             optimizer = optimizer(net_desc.parameters(), **optimizer_args)

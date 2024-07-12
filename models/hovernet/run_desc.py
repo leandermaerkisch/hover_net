@@ -169,11 +169,13 @@ def valid_step(batch_data, run_info):
 
 ####
 def infer_step(batch_data, model):
-
-    ####
     patch_imgs = batch_data
 
-    patch_imgs_gpu = patch_imgs.to("cuda").type(torch.float32)  # to NCHW
+    # Determine the device (CPU or CUDA) based on model's current device
+    device = next(model.parameters()).device
+
+    # Move data to the appropriate device and convert to float32
+    patch_imgs_gpu = patch_imgs.to(device).type(torch.float32)  # to NCHW
     patch_imgs_gpu = patch_imgs_gpu.permute(0, 3, 1, 2).contiguous()
 
     ####
