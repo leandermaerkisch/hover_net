@@ -38,7 +38,7 @@ from misc.utils import (
 from misc.viz_utils import colorize, visualize_instances_dict
 from skimage import color
 
-import convert_format
+from .. import convert_format
 from . import base
 
 
