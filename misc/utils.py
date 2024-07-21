@@ -35,10 +35,10 @@ def cropping_center(x, crop_shape, batch=False):
     Args:
         x: input array
         crop_shape: dimensions of cropped array
-    
+
     Returns:
         x: cropped array
-    
+
     """
     orig_shape = x.shape
     if not batch:
@@ -73,10 +73,10 @@ def get_inst_centroid(inst_map):
 
     Args:
         inst_map: input instance map
-    
+
     Returns:
         array of centroids
-    
+
     """
     inst_centroid_list = []
     inst_id_list = list(np.unique(inst_map))
@@ -143,13 +143,13 @@ def remove_small_objects(pred, min_size=64, connectivity=1):
     """Remove connected components smaller than the specified size.
 
     This function is taken from skimage.morphology.remove_small_objects, but the warning
-    is removed when a single label is provided. 
+    is removed when a single label is provided.
 
     Args:
         pred: input labelled array
         min_size: minimum size of instance in output array
-        connectivity: The connectivity defining the neighborhood of a pixel. 
-    
+        connectivity: The connectivity defining the neighborhood of a pixel.
+
     Returns:
         out: output array with instances removed under min_size
 

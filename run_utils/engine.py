@@ -82,7 +82,6 @@ class RunEngine(object):
         run_info=None,
         log_info=None,  # TODO: refactor this with trainer.py
     ):
-
         # * auto set all input as object variables
         self.engine_name = engine_name
         self.run_step = run_step
@@ -130,7 +129,6 @@ class RunEngine(object):
 
     # ! Put into trainer.py ?
     def run(self, nr_epoch=1, shared_state=None, chained=False):
-
         # TODO: refactor this
         if chained:
             self.state.curr_epoch = 0
@@ -202,4 +200,3 @@ class RunEngine(object):
             )
 
         return
-

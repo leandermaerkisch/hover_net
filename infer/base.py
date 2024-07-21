@@ -24,7 +24,7 @@ class InferManager(object):
         print("InferManager initialization arguments:")
         for key, value in kwargs.items():
             print(f"{key}: {value}")
-        self.batch_size = kwargs.get('batch_size', 1)  # Default to 1 if not provided
+        self.batch_size = kwargs.get("batch_size", 1)  # Default to 1 if not provided
         print(f"InferManager initialized with batch_size: {self.batch_size}")
 
         self.run_step = None
@@ -62,7 +62,7 @@ class InferManager(object):
     def __load_model(self):
         """Create the model, load the checkpoint and define
         associated run steps to process each data batch.
-        
+
         """
         model_desc = import_module("models.hovernet.net_desc")
         model_creator = getattr(model_desc, "create_model")

@@ -18,7 +18,6 @@ from dataset import get_dataset
 
 # -------------------------------------------------------------------------------------
 if __name__ == "__main__":
-
     # Determines whether to extract type map (only applicable to datasets with class labels).
     type_classification = True
 

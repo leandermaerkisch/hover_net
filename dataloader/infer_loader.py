@@ -20,10 +20,10 @@ class SerializeFileList(data.Dataset):
 
         self.img_list = img_list
         self.patch_info_list = patch_info_list
-        
+
         if not self.patch_info_list:
             raise ValueError("patch_info_list is empty")
-        
+
         print(f"SerializeFileList initialized with {len(self.patch_info_list)} patches")
 
     def __getitem__(self, idx):

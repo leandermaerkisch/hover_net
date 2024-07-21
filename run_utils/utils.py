@@ -31,7 +31,7 @@ def convert_pytorch_checkpoint(net_state_dict):
 
 ####
 def check_manual_seed(seed):
-    """ If manual seed is not specified, choose a 
+    """If manual seed is not specified, choose a
     random one and communicate it to the user.
 
     Args:
@@ -178,12 +178,10 @@ def get_model_summary(
 
     # assume 4 bytes/number (float on cuda).
     total_input_size = abs(
-        np.prod(sum(input_size, ())) * batch_size * 4.0 / (1024 ** 2.0)
+        np.prod(sum(input_size, ())) * batch_size * 4.0 / (1024**2.0)
     )
-    total_output_size = abs(
-        2.0 * total_output * 4.0 / (1024 ** 2.0)
-    )  # x2 for gradients
-    total_params_size = abs(total_params * 4.0 / (1024 ** 2.0))
+    total_output_size = abs(2.0 * total_output * 4.0 / (1024**2.0))  # x2 for gradients
+    total_params_size = abs(total_params * 4.0 / (1024**2.0))
     total_size = total_params_size + total_output_size + total_input_size
 
     summary_str += "".join("=" for _ in range(len(header_line))) + "\n"

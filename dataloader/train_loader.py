@@ -25,9 +25,9 @@ from .augs import (
 
 ####
 class FileLoader(torch.utils.data.Dataset):
-    """Data Loader. Loads images from a file list and 
+    """Data Loader. Loads images from a file list and
     performs augmentation with the albumentation library.
-    After augmentation, horizontal and vertical maps are 
+    After augmentation, horizontal and vertical maps are
     generated.
 
     Args:
@@ -35,7 +35,7 @@ class FileLoader(torch.utils.data.Dataset):
         input_shape: shape of the input [h,w] - defined in config.py
         mask_shape: shape of the output [h,w] - defined in config.py
         mode: 'train' or 'valid'
-        
+
     """
 
     # TODO: doc string
@@ -97,7 +97,7 @@ class FileLoader(torch.utils.data.Dataset):
         if self.with_type:
             type_map = (ann[..., 1]).copy()
             type_map = cropping_center(type_map, self.mask_shape)
-            #type_map[type_map == 5] = 1  # merge neoplastic and non-neoplastic
+            # type_map[type_map == 5] = 1  # merge neoplastic and non-neoplastic
             feed_dict["tp_map"] = type_map
 
         # TODO: document hard coded assumption about #input

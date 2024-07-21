@@ -15,7 +15,7 @@ def crop_op(x, cropping, data_format="NCHW"):
         x: input image
         cropping: the substracted amount
         data_format: choose either `NCHW` or `NHWC`
-        
+
     """
     crop_t = cropping[0] // 2
     crop_b = cropping[0] - crop_t
@@ -57,7 +57,7 @@ def xentropy_loss(true, pred, reduction="mean"):
     Args:
         pred: prediction array
         true: ground truth array
-    
+
     Returns:
         cross entropy loss
 
@@ -91,8 +91,8 @@ def mse_loss(true, pred):
         true: ground truth of combined horizontal
               and vertical maps
         pred: prediction of combined horizontal
-              and vertical maps 
-    
+              and vertical maps
+
     Returns:
         loss: mean squared error
 
@@ -104,18 +104,18 @@ def mse_loss(true, pred):
 
 ####
 def msge_loss(true, pred, focus):
-    """Calculate the mean squared error of the gradients of 
-    horizontal and vertical map predictions. Assumes 
+    """Calculate the mean squared error of the gradients of
+    horizontal and vertical map predictions. Assumes
     channel 0 is Vertical and channel 1 is Horizontal.
 
     Args:
         true:  ground truth of combined horizontal
                and vertical maps
         pred:  prediction of combined horizontal
-               and vertical maps 
+               and vertical maps
         focus: area where to apply loss (we only calculate
                 the loss within the nuclei)
-    
+
     Returns:
         loss:  mean squared error of gradients
 

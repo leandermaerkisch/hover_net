@@ -31,8 +31,7 @@ def get_config(nr_type, mode):
                     # may need more dynamic for each network
                     "net": {
                         "desc": lambda: create_model(
-                            input_ch=3, nr_types=nr_type, 
-                            freeze=True, mode=mode
+                            input_ch=3, nr_types=nr_type, freeze=True, mode=mode
                         ),
                         "optimizer": [
                             optim.Adam,
@@ -57,7 +56,10 @@ def get_config(nr_type, mode):
                     },
                 },
                 "target_info": {"gen": (gen_targets, {}), "viz": (prep_sample, {})},
-                "batch_size": {"train": 16, "valid": 16,},  # engine name : value
+                "batch_size": {
+                    "train": 16,
+                    "valid": 16,
+                },  # engine name : value
                 "nr_epochs": 50,
             },
             {
@@ -65,8 +67,7 @@ def get_config(nr_type, mode):
                     # may need more dynamic for each network
                     "net": {
                         "desc": lambda: create_model(
-                            input_ch=3, nr_types=nr_type, 
-                            freeze=False, mode=mode
+                            input_ch=3, nr_types=nr_type, freeze=False, mode=mode
                         ),
                         "optimizer": [
                             optim.Adam,
@@ -90,7 +91,10 @@ def get_config(nr_type, mode):
                     },
                 },
                 "target_info": {"gen": (gen_targets, {}), "viz": (prep_sample, {})},
-                "batch_size": {"train": 4, "valid": 8,}, # batch size per gpu
+                "batch_size": {
+                    "train": 4,
+                    "valid": 8,
+                },  # batch size per gpu
                 "nr_epochs": 50,
             },
         ],
@@ -128,7 +132,9 @@ def get_config(nr_type, mode):
                 "reset_per_run": True,  # * to stop aggregating output etc. from last run
                 # callbacks are run according to the list order of the event
                 "callbacks": {
-                    Events.STEP_COMPLETED: [AccumulateRawOutput(),],
+                    Events.STEP_COMPLETED: [
+                        AccumulateRawOutput(),
+                    ],
                     Events.EPOCH_COMPLETED: [
                         # TODO: is there way to preload these ?
                         ProcessAccumulatedRawOutput(

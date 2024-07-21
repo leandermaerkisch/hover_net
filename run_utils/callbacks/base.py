@@ -170,7 +170,7 @@ class AccumulateRawOutput(BaseCallbacks):
 
 ####
 class ScalarMovingAverage(BaseCallbacks):
-    """Calculate the running average for all scalar output of 
+    """Calculate the running average for all scalar output of
     each runstep of the attached RunEngine."""
 
     def __init__(self, alpha=0.95):

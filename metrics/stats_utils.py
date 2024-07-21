@@ -9,11 +9,11 @@ from scipy.optimize import linear_sum_assignment
 
 # --------------------------Optimised for Speed
 def get_fast_aji(true, pred):
-    """AJI version distributed by MoNuSeg, has no permutation problem but suffered from 
+    """AJI version distributed by MoNuSeg, has no permutation problem but suffered from
     over-penalisation similar to DICE2.
 
-    Fast computation requires instance IDs are in contiguous orderding i.e [1, 2, 3, 4] 
-    not [2, 3, 6, 10]. Please call `remap_label` before hand and `by_size` flag has no 
+    Fast computation requires instance IDs are in contiguous orderding i.e [1, 2, 3, 4]
+    not [2, 3, 6, 10]. Please call `remap_label` before hand and `by_size` flag has no
     effect on the result.
 
     """
@@ -92,13 +92,13 @@ def get_fast_aji(true, pred):
 #####
 def get_fast_aji_plus(true, pred):
     """AJI+, an AJI version with maximal unique pairing to obtain overall intersecion.
-    Every prediction instance is paired with at most 1 GT instance (1 to 1) mapping, unlike AJI 
+    Every prediction instance is paired with at most 1 GT instance (1 to 1) mapping, unlike AJI
     where a prediction instance can be paired against many GT instances (1 to many).
     Remaining unpaired GT and Prediction instances will be added to the overall union.
     The 1 to 1 mapping prevents AJI's over-penalisation from happening.
 
-    Fast computation requires instance IDs are in contiguous orderding i.e [1, 2, 3, 4] 
-    not [2, 3, 6, 10]. Please call `remap_label` before hand and `by_size` flag has no 
+    Fast computation requires instance IDs are in contiguous orderding i.e [1, 2, 3, 4]
+    not [2, 3, 6, 10]. Please call `remap_label` before hand and `by_size` flag has no
     effect on the result.
 
     """
@@ -178,25 +178,25 @@ def get_fast_aji_plus(true, pred):
 def get_fast_pq(true, pred, match_iou=0.5):
     """`match_iou` is the IoU threshold level to determine the pairing between
     GT instances `p` and prediction instances `g`. `p` and `g` is a pair
-    if IoU > `match_iou`. However, pair of `p` and `g` must be unique 
+    if IoU > `match_iou`. However, pair of `p` and `g` must be unique
     (1 prediction instance to 1 GT instance mapping).
 
     If `match_iou` < 0.5, Munkres assignment (solving minimum weight matching
-    in bipartite graphs) is caculated to find the maximal amount of unique pairing. 
+    in bipartite graphs) is caculated to find the maximal amount of unique pairing.
 
     If `match_iou` >= 0.5, all IoU(p,g) > 0.5 pairing is proven to be unique and
-    the number of pairs is also maximal.    
-    
-    Fast computation requires instance IDs are in contiguous orderding 
-    i.e [1, 2, 3, 4] not [2, 3, 6, 10]. Please call `remap_label` beforehand 
+    the number of pairs is also maximal.
+
+    Fast computation requires instance IDs are in contiguous orderding
+    i.e [1, 2, 3, 4] not [2, 3, 6, 10]. Please call `remap_label` beforehand
     and `by_size` flag has no effect on the result.
 
     Returns:
         [dq, sq, pq]: measurement statistic
 
-        [paired_true, paired_pred, unpaired_true, unpaired_pred]: 
+        [paired_true, paired_pred, unpaired_true, unpaired_pred]:
                       pairing information to perform measurement
-                    
+
     """
     assert match_iou >= 0.0, "Cant' be negative"
 
@@ -358,8 +358,8 @@ def get_dice_2(true, pred):
 
 #####
 def remap_label(pred, by_size=False):
-    """Rename all instance id so that the id is contiguous i.e [0, 1, 2, 3] 
-    not [0, 2, 4, 6]. The ordering of instances (which one comes first) 
+    """Rename all instance id so that the id is contiguous i.e [0, 1, 2, 3]
+    not [0, 2, 4, 6]. The ordering of instances (which one comes first)
     is preserved unless by_size=True, then the instances will be reordered
     so that bigger nucler has smaller ID.
 
@@ -391,14 +391,14 @@ def remap_label(pred, by_size=False):
 
 #####
 def pair_coordinates(setA, setB, radius):
-    """Use the Munkres or Kuhn-Munkres algorithm to find the most optimal 
-    unique pairing (largest possible match) when pairing points in set B 
+    """Use the Munkres or Kuhn-Munkres algorithm to find the most optimal
+    unique pairing (largest possible match) when pairing points in set B
     against points in set A, using distance as cost function.
 
     Args:
         setA, setB: np.array (float32) of size Nx2 contains the of XY coordinate
-                    of N different points 
-        radius: valid area around a point in setA to consider 
+                    of N different points
+        radius: valid area around a point in setA to consider
                 a given coordinate in setB a candidate for match
     Return:
         pairing: pairing is an array of indices
@@ -408,22 +408,22 @@ def pair_coordinates(setA, setB, radius):
 
     """
     # * Euclidean distance as the cost matrix
-    pair_distance = scipy.spatial.distance.cdist(setA, setB, metric='euclidean')
+    pair_distance = scipy.spatial.distance.cdist(setA, setB, metric="euclidean")
 
     # * Munkres pairing with scipy library
     # the algorithm return (row indices, matched column indices)
-    # if there is multiple same cost in a row, index of first occurence 
+    # if there is multiple same cost in a row, index of first occurence
     # is return, thus the unique pairing is ensured
     indicesA, paired_indicesB = linear_sum_assignment(pair_distance)
 
-    # extract the paired cost and remove instances 
+    # extract the paired cost and remove instances
     # outside of designated radius
     pair_cost = pair_distance[indicesA, paired_indicesB]
 
     pairedA = indicesA[pair_cost <= radius]
     pairedB = paired_indicesB[pair_cost <= radius]
 
-    pairing = np.concatenate([pairedA[:,None], pairedB[:,None]], axis=-1)
+    pairing = np.concatenate([pairedA[:, None], pairedB[:, None]], axis=-1)
     unpairedA = np.delete(np.arange(setA.shape[0]), pairedA)
     unpairedB = np.delete(np.arange(setB.shape[0]), pairedB)
     return pairing, unpairedA, unpairedB

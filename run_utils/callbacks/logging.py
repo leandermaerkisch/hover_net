@@ -55,7 +55,6 @@ class LoggingGradient(BaseCallbacks):
         return fig
 
     def run(self, state, event):
-
         if random.random() > 0.05:
             return
         curr_step = state.curr_global_step
@@ -92,7 +91,6 @@ class LoggingEpochOutput(BaseCallbacks):
         self.per_n_epoch = per_n_epoch
 
     def run(self, state, event):
-
         # only logging every n epochs also
         if state.curr_epoch % self.per_n_epoch != 0:
             return

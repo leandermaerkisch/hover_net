@@ -9,6 +9,7 @@ from matplotlib import cm
 
 from .utils import get_bounding_box
 
+
 ####
 def colorize(ch, vmin, vmax):
     """Will clamp value value outside the provided range to vmax and vmin."""
@@ -27,7 +28,7 @@ def colorize(ch, vmin, vmax):
 ####
 def random_colors(N, bright=True):
     """Generate random colors.
-    
+
     To get visually distinct colors, generate them in HSV space then
     convert to RGB.
     """
@@ -100,7 +101,7 @@ def visualize_instances_dict(
         input_image: input image
         inst_dict: dict of output prediction, defined as in this library
         draw_dot: to draw a dot for each centroid
-        type_colour: a dict of {type_id : (type_name, colour)} , 
+        type_colour: a dict of {type_id : (type_name, colour)} ,
                      `type_id` is from 0-N and `colour` is a tuple of (R, G, B)
         line_thickness: line thickness of contours
     """

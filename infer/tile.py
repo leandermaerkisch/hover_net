@@ -45,13 +45,13 @@ from . import base
 ####
 def _prepare_patching(img, window_size, mask_size, return_src_top_corner=False):
     """Prepare patch information for tile processing.
-    
+
     Args:
         img: original input image
         window_size: input patch size
         mask_size: output patch size
         return_src_top_corner: whether to return coordiante information for top left corner of img
-        
+
     """
 
     win_size = window_size
@@ -96,10 +96,14 @@ def _prepare_patching(img, window_size, mask_size, return_src_top_corner=False):
 
 ####
 def _post_process_patches(
-    post_proc_func, post_proc_kwargs, patch_info, image_info, overlay_kwargs,
+    post_proc_func,
+    post_proc_kwargs,
+    patch_info,
+    image_info,
+    overlay_kwargs,
 ):
     """Apply post processing to patches.
-    
+
     Args:
         post_proc_func: post processing function to use
         post_proc_kwargs: keyword arguments used in post processing function
@@ -151,11 +155,14 @@ class InferManager(base.InferManager):
         """
         Process a single image tile < 5000x5000 in size.
         """
-        print(f"process_file_list called with batch_size: {getattr(self, 'batch_size', 'Not set')}")
-        if not hasattr(self, 'batch_size') or self.batch_size <= 0:
-            self.batch_size = run_args.get('batch_size', 1)  # Try to get from run_args, default to 1
+        print(
+            f"process_file_list called with batch_size: {getattr(self, 'batch_size', 'Not set')}"
+        )
+        if not hasattr(self, "batch_size") or self.batch_size <= 0:
+            self.batch_size = run_args.get(
+                "batch_size", 1
+            )  # Try to get from run_args, default to 1
             print(f"batch_size set to: {self.batch_size}")
-
 
         for variable, value in run_args.items():
             self.__setattr__(variable, value)
@@ -165,17 +172,17 @@ class InferManager(base.InferManager):
         patterning = lambda x: re.sub(r"([\[\]])", r"[\1]", x)
         file_path_list = glob.glob(patterning("%s/*" % self.input_dir))
         file_path_list.sort()  # ensure same order
-        assert len(file_path_list) > 0, 'Not Detected Any Files From Path'
-        
-        rm_n_mkdir(self.output_dir + '/json/')
-        rm_n_mkdir(self.output_dir + '/mat/')
-        rm_n_mkdir(self.output_dir + '/overlay/')
+        assert len(file_path_list) > 0, "Not Detected Any Files From Path"
+
+        rm_n_mkdir(self.output_dir + "/json/")
+        rm_n_mkdir(self.output_dir + "/mat/")
+        rm_n_mkdir(self.output_dir + "/overlay/")
         if self.save_qupath:
             rm_n_mkdir(self.output_dir + "/qupath/")
 
         def proc_callback(results):
             """Post processing callback.
-            
+
             Output format is implicit assumption, taken from `_post_process_patches`
 
             """
@@ -183,18 +190,18 @@ class InferManager(base.InferManager):
 
             nuc_val_list = list(inst_info_dict.values())
             # need singleton to make matlab happy
-            nuc_uid_list = np.array(list(inst_info_dict.keys()))[:,None]
-            nuc_type_list = np.array([v["type"] for v in nuc_val_list])[:,None]
+            nuc_uid_list = np.array(list(inst_info_dict.keys()))[:, None]
+            nuc_type_list = np.array([v["type"] for v in nuc_val_list])[:, None]
             nuc_coms_list = np.array([v["centroid"] for v in nuc_val_list])
 
             mat_dict = {
-                "inst_map" : pred_inst,
-                "inst_uid" : nuc_uid_list,
+                "inst_map": pred_inst,
+                "inst_uid": nuc_uid_list,
                 "inst_type": nuc_type_list,
-                "inst_centroid": nuc_coms_list
+                "inst_centroid": nuc_coms_list,
             }
-            if self.nr_types is None: # matlab does not have None type array
-                mat_dict.pop("inst_type", None) 
+            if self.nr_types is None:  # matlab does not have None type array
+                mat_dict.pop("inst_type", None)
 
             if self.save_raw_map:
                 mat_dict["raw_map"] = pred_map
@@ -240,7 +247,6 @@ class InferManager(base.InferManager):
             proc_pool = ProcessPoolExecutor(self.nr_post_proc_workers)
 
         while len(file_path_list) > 0:
-
             hardware_stats = psutil.virtual_memory()
             available_ram = getattr(hardware_stats, "available")
             available_ram = int(available_ram * self.mem_usage)
@@ -301,7 +307,9 @@ class InferManager(base.InferManager):
             print(f"Dataset length: {len(dataset)}")
 
             if self.batch_size <= 0:
-                raise ValueError(f"batch_size should be a positive integer, but got {self.batch_size}")
+                raise ValueError(
+                    f"batch_size should be a positive integer, but got {self.batch_size}"
+                )
 
             dataloader = data.DataLoader(
                 dataset,
@@ -402,4 +410,3 @@ class InferManager(base.InferManager):
                         file_path = proc_callback(future.result())
                         log_info("Done Assembling %s" % file_path)
         return
-

@@ -8,6 +8,7 @@ from .utils import crop_to_shape, dice_loss, mse_loss, msge_loss, xentropy_loss
 
 from collections import OrderedDict
 
+
 ####
 def train_step(batch_data, run_info):
     # TODO: synchronize the attach protocol
@@ -202,7 +203,7 @@ def infer_step(batch_data, model):
 ####
 def viz_step_output(raw_data, nr_types=None):
     """
-    `raw_data` will be implicitly provided in the similar format as the 
+    `raw_data` will be implicitly provided in the similar format as the
     return dict from train/valid step, but may have been accumulated across N running step
     """
 
