@@ -258,6 +258,24 @@ def _assemble_and_flush(wsi_pred_map_mmap_path, chunk_info, patch_output_list):
 
 ####
 class InferManager(base.InferManager):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        # Set default values
+        self.ambiguous_size = kwargs.get('ambiguous_size', 128)
+        self.tile_shape = kwargs.get('tile_shape', (256, 256))
+        self.chunk_shape = kwargs.get('chunk_shape', (1024, 1024))
+        self.save_thumb = kwargs.get('save_thumb', True)
+        self.save_mask = kwargs.get('save_mask', True)
+
+        self.patch_input_shape = kwargs.get('patch_input_shape', (256, 256))
+        self.patch_output_shape = kwargs.get('patch_output_shape', (164, 164))
+        self.proc_mag = kwargs.get('proc_mag', 40)
+        self.cache_path = kwargs.get('cache_path', './cache')
+        self.nr_inference_workers = kwargs.get('nr_inference_workers', 8)
+        self.nr_post_proc_workers = kwargs.get('nr_post_proc_workers', 8)
+        
+
     def __run_model(self, patch_top_left_list, pbar_desc):
         # TODO: the cost of creating dataloader may not be cheap ?
         dataset = SerializeArray(
@@ -456,6 +474,9 @@ class InferManager(base.InferManager):
 
         """
         # TODO: customize universal file handler to sync the protocol
+        print(f"Processing file: {wsi_path}")
+        print(f"Output directory: {output_dir}")
+
         ambiguous_size = self.ambiguous_size
         tile_shape = (np.array(self.tile_shape)).astype(np.int64)
         chunk_input_shape = np.array(self.chunk_shape)
