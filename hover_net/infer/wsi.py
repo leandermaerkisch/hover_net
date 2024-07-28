@@ -97,7 +97,8 @@ def _get_tile_info(img_shape, tile_shape, ambiguous_size=128):
     tile_grid_y = np.unique(tile_grid_top_left[:, 0])
     # * get tiling set to fix vertical and horizontal boundary between tiles
     # for sanity, expand at boundary `ambiguous_size` to both side vertical and horizontal
-    stack_coord = lambda x: np.stack([x[0].flatten(), x[1].flatten()], axis=-1)
+    def stack_coord(x):
+        return np.stack([x[0].flatten(), x[1].flatten()], axis=-1)
     tile_boundary_x_top_left = np.meshgrid(
         tile_grid_y, tile_grid_x[1:] - ambiguous_size
     )
@@ -148,7 +149,8 @@ def _get_chunk_patch_info(
         patch_output_shape: output patch shape
 
     """
-    round_to_multiple = lambda x, y: np.floor(x / y) * y
+    def round_to_multiple(x, y):
+        return np.floor(x / y) * y
     patch_diff_shape = patch_input_shape - patch_output_shape
 
     chunk_output_shape = chunk_input_shape - patch_diff_shape
@@ -354,7 +356,8 @@ class InferManager(base.InferManager):
         proc_pool = Pool(processes=1)
         wsi_pred_map_mmap_path = "%s/pred_map.npy" % self.cache_path
 
-        masking = lambda x, a, b: (a <= x) & (x <= b)
+        def masking(x, a, b):
+            return (a <= x) & (x <= b)
         for idx in range(0, chunk_info_list.shape[0]):
             chunk_info = chunk_info_list[idx]
             # select patch basing on top left coordinate of input
@@ -702,9 +705,8 @@ class InferManager(base.InferManager):
             return
 
         #######################
-        pbar_creator = lambda x, y: tqdm.tqdm(
-            desc=y, leave=True, total=int(len(x)), ncols=80, ascii=True, position=0
-        )
+        def pbar_creator(x, y):
+            return tqdm.tqdm(desc=y, leave=True, total=int(len(x)), ncols=80, ascii=True, position=0)
         pbar = pbar_creator(tile_grid_info, "Post Proc Phase 1")
         # * must be in sequential ordering
         self.__dispatch_post_processing(tile_grid_info, post_proc_normal_tile_callback)

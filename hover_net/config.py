@@ -30,10 +30,6 @@ class Config(object):
         # below config is for original mode.
         # If original model mode is used, use [270,270] and [80,80] for act_shape and out_shape respectively
         # If fast model mode is used, use [256,256] and [164,164] for act_shape and out_shape respectively
-        aug_shape = [
-            540,
-            540,
-        ]  # patch shape used during augmentation (larger patch may have less border artefacts)
         act_shape = [
             270,
             270,

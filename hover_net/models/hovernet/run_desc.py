@@ -21,7 +21,8 @@ def train_step(batch_data, run_info):
     }
     # use 'ema' to add for EMA calculation, must be scalar!
     result_dict = {"EMA": {}}
-    track_value = lambda name, value: result_dict["EMA"].update({name: value})
+    def track_value(name, value):
+        return result_dict["EMA"].update({name: value})
 
     ####
     model = run_info["net"]["desc"]

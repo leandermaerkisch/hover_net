@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
     args = {k.replace("--", ""): v for k, v in args.items()}
     sub_args = {k.replace("--", ""): v for k, v in sub_args.items()}
-    if args["model_path"] == None:
+    if args["model_path"] is None:
         raise Exception(
             "A model path must be supplied as an argument with --model_path."
         )

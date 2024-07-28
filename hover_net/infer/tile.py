@@ -152,7 +152,8 @@ class InferManager(base.InferManager):
         assert self.mem_usage < 1.0 and self.mem_usage > 0.0
 
         # * depend on the number of samples and their size, this may be less efficient
-        patterning = lambda x: re.sub(r"([\[\]])", r"[\1]", x)
+        def patterning(x):
+            return re.sub("([\\[\\]])", "[\\1]", x)
         file_path_list = glob.glob(patterning("%s/*" % self.input_dir))
         file_path_list.sort()  # ensure same order
         assert len(file_path_list) > 0, "Not Detected Any Files From Path"

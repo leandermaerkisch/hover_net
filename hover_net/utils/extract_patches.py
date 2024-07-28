@@ -41,7 +41,8 @@ if __name__ == "__main__":
         },
     }
 
-    patterning = lambda x: re.sub("([\[\]])", "[\\1]", x)
+    def patterning(x):
+        return re.sub("([\\[\\]])", "[\\1]", x)
     parser = get_dataset(dataset_name)
     xtractor = PatchExtractor(win_size, step_size)
     for split_name, split_desc in dataset_info.items():
