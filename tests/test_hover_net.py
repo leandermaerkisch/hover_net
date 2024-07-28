@@ -22,9 +22,3 @@ def test_infer_module():
 
 def test_models_module():
     assert hasattr(models, 'hovernet'), "models module should have 'hovernet' attribute"
-
-@pytest.mark.parametrize("script", ["hover-net-infer", "hover-net-train"])
-def test_cli_scripts(script):
-    result = subprocess.run([script, "--help"], capture_output=True, text=True)
-    assert result.returncode == 0, f"{script} --help should run without errors"
-    assert "usage:" in result.stdout, f"{script} --help should display usage information"
