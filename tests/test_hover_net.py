@@ -1,5 +1,3 @@
-import pytest
-import subprocess
 import hover_net
 import sys
 import os

@@ -14,7 +14,7 @@ import psutil
 import scipy.io as sio
 import torch.utils.data as data
 import tqdm
-from hover_net.dataloader.infer_loader import SerializeArray, SerializeFileList
+from hover_net.dataloader.infer_loader import SerializeFileList
 from hover_net.misc.utils import (
     log_info,
     rm_n_mkdir,

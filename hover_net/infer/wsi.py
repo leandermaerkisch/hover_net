@@ -9,7 +9,6 @@ import logging
 import os
 import pathlib
 import time
-import logging
 import sys
 
 import cv2
@@ -261,7 +260,7 @@ class InferManager(base.InferManager):
         self.nr_post_proc_workers = kwargs.get("nr_post_proc_workers", 8)
 
     def __run_model(self, patch_top_left_list, pbar_desc):
-        logging.debug(f"Entering __run_model")
+        logging.debug("Entering __run_model")
         logging.debug(f"patch_top_left_list length: {len(patch_top_left_list)}")
         logging.debug(f"self.batch_size: {self.batch_size}")
 
@@ -346,7 +345,7 @@ class InferManager(base.InferManager):
             patch_info_list: list of patch coordinate information
 
         """
-        logging.debug(f"Entering __get_raw_prediction")
+        logging.debug("Entering __get_raw_prediction")
         logging.debug(f"chunk_info_list shape: {chunk_info_list.shape}")
         logging.debug(f"patch_info_list shape: {patch_info_list.shape}")
 
