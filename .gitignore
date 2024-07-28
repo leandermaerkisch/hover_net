@@ -1,15 +1,41 @@
-.vscode
-*__pycache__
-
-# directories
-cache/
-dataset/
-exp_output/
-.venv/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
 build/
+develop-eggs/
 dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# checkpoint paths
-*.npz
-*.png
-*.log
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+test_env_py39
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+pretrained/
+dataset/sample_tiles/pred/
