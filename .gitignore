@@ -38,5 +38,5 @@ Thumbs.db
 
 # Project specific
 pretrained/
-dataset/sample_tiles/pred/
+dataset/
 debug.log
