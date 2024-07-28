@@ -26,7 +26,7 @@ import scipy.io as sio
 import torch
 import torch.utils.data as data
 import tqdm
-from dataloader.infer_loader import SerializeArray, SerializeFileList
+from ..dataloader.infer_loader import SerializeArray, SerializeFileList
 from misc.utils import (
     color_deconvolution,
     cropping_center,
