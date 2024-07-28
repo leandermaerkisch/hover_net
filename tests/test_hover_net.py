@@ -1,7 +1,11 @@
 import pytest
 import subprocess
 import hover_net
+import sys
+import os
 from hover_net import dataloader, infer, metrics, misc, models, run_utils
+
+sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 def test_version():
     assert hasattr(hover_net, '__version__'), "hover_net should have a __version__ attribute"
@@ -24,5 +28,3 @@ def test_cli_scripts(script):
     result = subprocess.run([script, "--help"], capture_output=True, text=True)
     assert result.returncode == 0, f"{script} --help should run without errors"
     assert "usage:" in result.stdout, f"{script} --help should display usage information"
-
-# Add more specific tests for your package's functionality here

@@ -54,7 +54,7 @@ class InferManager(object):
         associated run steps to process each data batch.
 
         """
-        model_desc = import_module("models.hovernet.net_desc")
+        model_desc = import_module("hover_net.models.hovernet.net_desc")
         model_creator = getattr(model_desc, "create_model")
 
         net = model_creator(**self.method["model_args"])
@@ -67,11 +67,11 @@ class InferManager(object):
         net = net.to(device)
         print(f"Using device: {device}")
 
-        module_lib = import_module("models.hovernet.run_desc")
+        module_lib = import_module("hover_net.models.hovernet.run_desc")
         run_step = getattr(module_lib, "infer_step")
         self.run_step = lambda input_batch: run_step(input_batch, net)
 
-        module_lib = import_module("models.hovernet.post_proc")
+        module_lib = import_module("hover_net.models.hovernet.post_proc")
         self.post_proc_func = getattr(module_lib, "process")
         return
 

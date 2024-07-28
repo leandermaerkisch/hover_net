@@ -21,6 +21,7 @@ setup(
         "torchvision",
         "matplotlib",
         "pandas",
+        "openslide-python",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

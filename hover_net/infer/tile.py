@@ -14,7 +14,7 @@ import psutil
 import scipy.io as sio
 import torch.utils.data as data
 import tqdm
-from ..dataloader.infer_loader import SerializeFileList
+from hover_net.dataloader.infer_loader import SerializeArray, SerializeFileList
 from hover_net.misc.utils import (
     log_info,
     rm_n_mkdir,
@@ -307,7 +307,6 @@ class InferManager(base.InferManager):
                 total=int(len(cache_patch_info_list) / self.batch_size) + 1,
                 ncols=80,
                 ascii=True,
-                position=0,
             )
 
             accumulated_patch_output = []

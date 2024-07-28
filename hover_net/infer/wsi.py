@@ -14,12 +14,12 @@ import cv2
 import numpy as np
 import torch.utils.data as data
 import tqdm
-from dataloader.infer_loader import SerializeArray
-from misc.utils import (
+from hover_net.dataloader.infer_loader import SerializeArray
+from hover_net.misc.utils import (
     log_info,
     rm_n_mkdir,
 )
-from misc.wsi_handler import get_file_handler
+from hover_net.misc.wsi_handler import get_file_handler
 
 from . import base
 

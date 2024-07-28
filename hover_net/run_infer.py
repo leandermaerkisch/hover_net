@@ -182,7 +182,7 @@ if __name__ == "__main__":
     # ***
 
     if sub_cmd == "tile":
-        from infer.tile import InferManager
+        from hover_net.infer.tile import InferManager
 
         # After parsing arguments
         print("Parsed arguments:")
