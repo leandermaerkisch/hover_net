@@ -9,6 +9,8 @@ import logging
 import os
 import pathlib
 import time
+import logging
+import sys
 
 import cv2
 import numpy as np
@@ -25,14 +27,13 @@ from . import base
 
 thread_lock = Lock()
 
+logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s')
 
-####
 def _init_worker_child(lock_):
     global lock
     lock = lock_
 
 
-####
 def _remove_inst(inst_map, remove_id_list):
     """Remove instances with id in remove_id_list.
 
@@ -45,7 +46,6 @@ def _remove_inst(inst_map, remove_id_list):
     return inst_map
 
 
-####
 def _get_patch_top_left_info(img_shape, input_size, output_size):
     """Get top left coordinate information of patches from original image.
 
@@ -110,7 +110,7 @@ def _get_tile_info(img_shape, tile_shape, ambiguous_size=128):
     tile_boundary_x = np.stack(
         [tile_boundary_x_top_left, tile_boundary_x_bot_right], axis=1
     )
-    #
+
     tile_boundary_y_top_left = np.meshgrid(
         tile_grid_y[1:] - ambiguous_size, tile_grid_x
     )
@@ -136,7 +136,7 @@ def _get_tile_info(img_shape, tile_shape, ambiguous_size=128):
     return tile_grid, tile_boundary, tile_cross
 
 
-####
+
 def _get_chunk_patch_info(
     img_shape, chunk_input_shape, patch_input_shape, patch_output_shape
 ):
@@ -241,7 +241,6 @@ def _assemble_and_flush(wsi_pred_map_mmap_path, chunk_info, patch_output_list):
     return
 
 
-####
 class InferManager(base.InferManager):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -252,6 +251,7 @@ class InferManager(base.InferManager):
         self.chunk_shape = kwargs.get("chunk_shape", (1024, 1024))
         self.save_thumb = kwargs.get("save_thumb", True)
         self.save_mask = kwargs.get("save_mask", True)
+        self.batch_size = max(1, kwargs.get("batch_size", 1)) 
 
         self.patch_input_shape = kwargs.get("patch_input_shape", (256, 256))
         self.patch_output_shape = kwargs.get("patch_output_shape", (164, 164))
@@ -261,17 +261,28 @@ class InferManager(base.InferManager):
         self.nr_post_proc_workers = kwargs.get("nr_post_proc_workers", 8)
 
     def __run_model(self, patch_top_left_list, pbar_desc):
-        # TODO: the cost of creating dataloader may not be cheap ?
+        logging.debug(f"Entering __run_model")
+        logging.debug(f"patch_top_left_list length: {len(patch_top_left_list)}")
+        logging.debug(f"self.batch_size: {self.batch_size}")
+
+
+        if len(patch_top_left_list) == 0:
+            logging.warning("patch_top_left_list is empty, returning early")
+            return []
+        
         dataset = SerializeArray(
             "%s/cache_chunk.npy" % self.cache_path,
             patch_top_left_list,
             self.patch_input_shape,
         )
 
+        batch_size = max(1, min(len(patch_top_left_list), self.batch_size))
+        logging.debug(f"Calculated batch_size: {batch_size}")
+
         dataloader = data.DataLoader(
             dataset,
             num_workers=self.nr_inference_workers,
-            batch_size=self.batch_size,
+            batch_size=batch_size,
             drop_last=False,
         )
 
@@ -281,7 +292,6 @@ class InferManager(base.InferManager):
             total=int(len(dataloader)),
             ncols=80,
             ascii=True,
-            position=0,
         )
 
         # run inference on input patches
@@ -336,6 +346,11 @@ class InferManager(base.InferManager):
             patch_info_list: list of patch coordinate information
 
         """
+        logging.debug(f"Entering __get_raw_prediction")
+        logging.debug(f"chunk_info_list shape: {chunk_info_list.shape}")
+        logging.debug(f"patch_info_list shape: {patch_info_list.shape}")
+
+
         # 1 dedicated thread just to write results back to disk
         proc_pool = Pool(processes=1)
         wsi_pred_map_mmap_path = "%s/pred_map.npy" % self.cache_path
@@ -356,8 +371,11 @@ class InferManager(base.InferManager):
             # further select only the patches within the provided mask
             chunk_patch_info_list = self.__select_valid_patches(chunk_patch_info_list)
 
+            logging.debug(f"chunk_patch_info_list length: {len(chunk_patch_info_list)}")
+
             # there no valid patches, so flush 0 and skip
             if chunk_patch_info_list.shape[0] == 0:
+                logging.warning(f"No valid patches for chunk {idx}, skipping")
                 proc_pool.apply_async(
                     _assemble_and_flush, args=(wsi_pred_map_mmap_path, chunk_info, None)
                 )
@@ -550,6 +568,9 @@ class InferManager(base.InferManager):
             patch_input_shape,
             patch_output_shape,
         )
+
+        logging.debug(f"chunk_info_list shape: {chunk_info_list.shape}")
+        logging.debug(f"patch_info_list shape: {patch_info_list.shape}")
 
         # get the raw prediction of HoVer-Net, given info of inference tiles and patches
         self.__get_raw_prediction(chunk_info_list, patch_info_list)
