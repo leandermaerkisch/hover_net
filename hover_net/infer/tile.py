@@ -1,42 +1,25 @@
-import logging
 import multiprocessing
-from multiprocessing import Lock, Pool
 
 multiprocessing.set_start_method("spawn", True)  # ! must be at top for VScode debugging
-import argparse
 import glob
-import json
 import math
-import multiprocessing as mp
-import os
 import pathlib
-import pickle
 import re
 import sys
-import warnings
-from concurrent.futures import FIRST_EXCEPTION, ProcessPoolExecutor, as_completed, wait
-from functools import reduce
-from importlib import import_module
-from multiprocessing import Lock, Pool
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import cv2
 import numpy as np
 import psutil
 import scipy.io as sio
-import torch
 import torch.utils.data as data
 import tqdm
-from ..dataloader.infer_loader import SerializeArray, SerializeFileList
+from ..dataloader.infer_loader import SerializeFileList
 from misc.utils import (
-    color_deconvolution,
-    cropping_center,
-    get_bounding_box,
-    log_debug,
     log_info,
     rm_n_mkdir,
 )
-from misc.viz_utils import colorize, visualize_instances_dict
-from skimage import color
+from misc.viz_utils import visualize_instances_dict
 
 from .. import convert_format
 from . import base

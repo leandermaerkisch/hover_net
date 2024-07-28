@@ -1,18 +1,14 @@
 import argparse
-import cProfile as profile
 import glob
 import os
 
-import cv2
 import numpy as np
-import pandas as pd
 import scipy.io as sio
 
 from metrics.stats_utils import (
     get_dice_1,
     get_fast_aji,
     get_fast_aji_plus,
-    get_fast_dice_2,
     get_fast_pq,
     remap_label,
     pair_coordinates,

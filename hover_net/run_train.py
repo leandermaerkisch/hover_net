@@ -17,15 +17,11 @@ Options:
 import cv2
 
 cv2.setNumThreads(0)
-import argparse
 import glob
-import importlib
 import inspect
 import json
 import os
-import shutil
 
-import matplotlib
 import numpy as np
 import torch
 from docopt import docopt
@@ -38,7 +34,6 @@ from dataloader.train_loader import FileLoader
 from misc.utils import rm_n_mkdir
 from run_utils.engine import RunEngine
 from run_utils.utils import (
-    check_log_dir,
     check_manual_seed,
     colored,
     convert_pytorch_checkpoint,

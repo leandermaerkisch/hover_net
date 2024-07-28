@@ -11,9 +11,7 @@ import glob
 import json
 import pathlib
 import numpy as np
-import shutil
 
-from misc.utils import rm_n_mkdir, mkdir
 
 
 ####

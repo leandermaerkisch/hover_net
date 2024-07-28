@@ -3,9 +3,7 @@ import math
 import random
 import colorsys
 import numpy as np
-import itertools
 import matplotlib.pyplot as plt
-from matplotlib import cm
 
 from .utils import get_bounding_box
 

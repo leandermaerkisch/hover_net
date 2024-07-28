@@ -1,15 +1,7 @@
-import csv
-import glob
-import os
-import re
 
-import cv2
-import matplotlib.pyplot as plt
 import numpy as np
-import scipy.io as sio
 import torch.utils.data
 
-import imgaug as ia
 from imgaug import augmenters as iaa
 from misc.utils import cropping_center
 

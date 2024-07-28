@@ -5,7 +5,6 @@ Patch extraction script.
 
 import re
 import glob
-import os
 import tqdm
 import pathlib
 

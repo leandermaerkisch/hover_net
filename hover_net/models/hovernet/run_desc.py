@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
 
-from misc.utils import center_pad_to_shape, cropping_center
-from .utils import crop_to_shape, dice_loss, mse_loss, msge_loss, xentropy_loss
+from misc.utils import cropping_center
+from .utils import dice_loss, mse_loss, msge_loss, xentropy_loss
 
 from collections import OrderedDict
 
@@ -260,7 +260,6 @@ def viz_step_output(raw_data, nr_types=None):
 
 
 ####
-from itertools import chain
 
 
 def proc_valid_step_output(raw_data, nr_types=None):
