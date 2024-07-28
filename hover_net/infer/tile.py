@@ -15,14 +15,14 @@ import scipy.io as sio
 import torch.utils.data as data
 import tqdm
 from ..dataloader.infer_loader import SerializeFileList
-from misc.utils import (
+from hover_net.misc.utils import (
     log_info,
     rm_n_mkdir,
 )
-from misc.viz_utils import visualize_instances_dict
+from hover_net.misc.viz_utils import visualize_instances_dict
 
-from .. import convert_format
-from . import base
+from hover_net.misc import convert_format
+from hover_net.infer import base
 
 
 ####

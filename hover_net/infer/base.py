@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from run_utils.utils import convert_pytorch_checkpoint
+from hover_net.run_utils.utils import convert_pytorch_checkpoint
 
 
 ####
