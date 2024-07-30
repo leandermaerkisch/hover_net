@@ -8,8 +8,8 @@ python -m hover_net.run_infer \
     --nr_inference_workers=16 \
     --nr_post_proc_workers=16 \
     wsi \
-    --input_dir=dataset/wsi/input/ \
-    --output_dir=dataset/wsi/output/ \
+    --input_dir=dataset/wsi/input \
+    --output_dir=dataset/wsi/output \
     --input_mask_dir=dataset/sample_wsis/msk/ \
     --save_thumb \
     --save_mask

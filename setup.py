@@ -15,7 +15,6 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        "docopt==0.6.2",
         "future==0.18.2",
         "imgaug==0.4.0",
         "matplotlib>=3.5.3,<4.0.0",

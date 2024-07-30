@@ -30,6 +30,8 @@ env/
 venv/
 ENV/
 test_env_py39
+*venv*
+*env*
 
 # IDEs
 .vscode/

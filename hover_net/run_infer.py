@@ -1,96 +1,11 @@
-"""run_infer.py
-
-Usage:
-  run_infer.py [options] [--help] <command> [<args>...]
-  run_infer.py --version
-  run_infer.py (-h | --help)
-
-Options:
-  -h --help                   Show this string.
-  --version                   Show version.
-
-  --gpu=<id>                  GPU list. [default: 0]
-  --nr_types=<n>              Number of nuclei types to predict. [default: 0]
-  --type_info_path=<path>     Path to a json define mapping between type id, type name,
-                              and expected overlaid color. [default: '']
-
-  --model_path=<path>         Path to saved checkpoint.
-  --model_mode=<mode>         Original HoVer-Net or the reduced version used PanNuke and MoNuSAC,
-                              'original' or 'fast'. [default: fast]
-  --nr_inference_workers=<n>  Number of workers during inference. [default: 8]
-  --nr_post_proc_workers=<n>  Number of workers during post-processing. [default: 16]
-  --batch_size=<n>            Batch size per 1 GPU. [default: 32]
-
-Two command mode are `tile` and `wsi` to enter corresponding inference mode
-    tile  run the inference on tile
-    wsi   run the inference on wsi
-
-Use `run_infer.py <command> --help` to show their options and usage.
-"""
-
-tile_cli = """
-Arguments for processing tiles.
-
-usage:
-    tile (--input_dir=<path>) (--output_dir=<path>) \
-         [--draw_dot] [--save_qupath] [--save_raw_map] [--mem_usage=<n>]
-    
-options:
-   --input_dir=<path>     Path to input data directory. Assumes the files are not nested within directory.
-   --output_dir=<path>    Path to output directory..
-
-   --mem_usage=<n>        Declare how much memory (physical + swap) should be used for caching. 
-                          By default it will load as many tiles as possible till reaching the 
-                          declared limit. [default: 0.2]
-   --draw_dot             To draw nuclei centroid on overlay. [default: False]
-   --save_qupath          To optionally output QuPath v0.2.3 compatible format. [default: False]
-   --save_raw_map         To save raw prediction or not. [default: False]
-"""
-
-wsi_cli = """
-Arguments for processing wsi
-
-usage:
-    wsi (--input_dir=<path>) (--output_dir=<path>) [--proc_mag=<n>]\
-        [--cache_path=<path>] [--input_mask_dir=<path>] \
-        [--ambiguous_size=<n>] [--chunk_shape=<n>] [--tile_shape=<n>] \
-        [--save_thumb] [--save_mask]
-    
-options:
-    --input_dir=<path>      Path to input data directory. Assumes the files are not nested within directory.
-    --output_dir=<path>     Path to output directory.
-    --cache_path=<path>     Path for cache. Should be placed on SSD with at least 100GB. [default: cache]
-    --mask_dir=<path>       Path to directory containing tissue masks. 
-                            Should have the same name as corresponding WSIs. [default: '']
-
-    --proc_mag=<n>          Magnification level (objective power) used for WSI processing. [default: 40]
-    --ambiguous_size=<int>  Define ambiguous region along tiling grid to perform re-post processing. [default: 128]
-    --chunk_shape=<n>       Shape of chunk for processing. [default: 10000]
-    --tile_shape=<n>        Shape of tiles for processing. [default: 2048]
-    --save_thumb            To save thumb. [default: False]
-    --save_mask             To save mask. [default: False]
-"""
-
+import argparse
 import torch
 import logging
 import os
-from docopt import docopt
+from typing import Dict, Any
 from hover_net.misc.utils import log_info
 
-# -------------------------------------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    sub_cli_dict = {"tile": tile_cli, "wsi": wsi_cli}
-    args = docopt(
-        __doc__,
-        help=False,
-        options_first=True,
-        version="HoVer-Net Pytorch Inference v1.0",
-    )
-    sub_cmd = args.pop("<command>")
-    sub_cmd_args = args.pop("<args>")
-
-    # ! TODO: where to save logging
+def setup_logging():
     logging.basicConfig(
         level=logging.INFO,
         format="|%(asctime)s.%(msecs)03d| [%(levelname)s] %(message)s",
@@ -98,105 +13,81 @@ if __name__ == "__main__":
         handlers=[logging.FileHandler("debug.log"), logging.StreamHandler()],
     )
 
-    if args["--help"] and sub_cmd is not None:
-        if sub_cmd in sub_cli_dict:
-            print(sub_cli_dict[sub_cmd])
+def create_parser():
+    parser = argparse.ArgumentParser(description="HoVer-Net Pytorch Inference")
+    parser.add_argument("--gpu", default="0", help="GPU list.")
+    parser.add_argument("--nr_types", type=int, default=0, help="Number of nuclei types to predict.")
+    parser.add_argument("--type_info_path", default="", help="Path to type info json with info about prediction classes.")
+    parser.add_argument("--model_path", required=True, help="Path to saved checkpoint.")
+    parser.add_argument("--model_mode", default="fast", choices=["original", "fast"], help="HoVer-Net mode.")
+    parser.add_argument("--nr_inference_workers", type=int, default=8, help="Number of inference workers.")
+    parser.add_argument("--nr_post_proc_workers", type=int, default=16, help="Number of post-processing workers.")
+    parser.add_argument("--batch_size", type=int, default=1, help="Batch size per GPU.")
+
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    for cmd in ["tile", "wsi"]:
+        sub = subparsers.add_parser(cmd, help=f"Run inference on {cmd}")
+        sub.add_argument("--input_dir", required=True, help="Input directory path.")
+        sub.add_argument("--output_dir", required=True, help="Output directory path.")
+        if cmd == "tile":
+            sub.add_argument("--mem_usage", type=float, default=0.2, help="Memory usage for caching.")
+            sub.add_argument("--draw_dot", action="store_true", help="Draw nuclei centroid.")
+            sub.add_argument("--save_qupath", action="store_true", help="Save in QuPath format.")
+            sub.add_argument("--save_raw_map", action="store_true", help="Save raw prediction.")
+        elif cmd == "wsi":
+            sub.add_argument("--cache_path", default="cache", help="Cache path.")
+            sub.add_argument("--input_mask_dir", default="", help="Input mask directory.")
+            sub.add_argument("--proc_mag", type=int, default=40, help="Processing magnification.")
+            sub.add_argument("--ambiguous_size", type=int, default=128, help="Ambiguous region size.")
+            sub.add_argument("--chunk_shape", type=int, default=10000, help="Chunk shape for processing.")
+            sub.add_argument("--tile_shape", type=int, default=2048, help="Tile shape for processing.")
+            sub.add_argument("--save_thumb", action="store_true", help="Save thumbnail.")
+            sub.add_argument("--save_mask", action="store_true", help="Save mask.")
         else:
-            print(__doc__)
-        exit()
-    if args["--help"] or sub_cmd is None:
-        print(__doc__)
-        exit()
+            raise ValueError(f"Invalid command: {cmd}")
 
-    sub_args = docopt(sub_cli_dict[sub_cmd], argv=sub_cmd_args, help=True)
+    return parser
 
-    args.pop("--version")
-    gpu_list = args.pop("--gpu")
-    os.environ["CUDA_VISIBLE_DEVICES"] = gpu_list
+def main():
+    setup_logging()
+    args = create_parser().parse_args()
 
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     nr_gpus = torch.cuda.device_count()
-    log_info("Detect #GPUS: %d" % nr_gpus)
+    log_info(f"Detect #GPUS: {nr_gpus}")
 
-    args = {k.replace("--", ""): v for k, v in args.items()}
-    sub_args = {k.replace("--", ""): v for k, v in sub_args.items()}
-    if args["model_path"] is None:
-        raise Exception(
-            "A model path must be supplied as an argument with --model_path."
-        )
-
-    nr_types = int(args["nr_types"]) if int(args["nr_types"]) > 0 else None
     method_args = {
         "method": {
             "model_args": {
-                "nr_types": nr_types,
-                "mode": args["model_mode"],
+                "nr_types": args.nr_types if args.nr_types > 0 else None,
+                "mode": args.model_mode,
             },
-            "model_path": args["model_path"],
+            "model_path": args.model_path,
         },
-        "type_info_path": None
-        if args["type_info_path"] == ""
-        else args["type_info_path"],
+        "type_info_path": args.type_info_path or None,
     }
 
-    # ***
     run_args = {
-        "batch_size": int(args["batch_size"]) * nr_gpus,
-        "nr_inference_workers": int(args["nr_inference_workers"]),
-        "nr_post_proc_workers": int(args["nr_post_proc_workers"]),
+        "batch_size": max(1, args.batch_size * nr_gpus),
+        "nr_inference_workers": args.nr_inference_workers,
+        "nr_post_proc_workers": args.nr_post_proc_workers,
+        "patch_input_shape": 256 if args.model_mode == "fast" else 270,
+        "patch_output_shape": 164 if args.model_mode == "fast" else 80,
+        "input_dir": args.input_dir,
+        "output_dir": args.output_dir,
     }
 
-    if args["model_mode"] == "fast":
-        run_args["patch_input_shape"] = 256
-        run_args["patch_output_shape"] = 164
-    else:
-        run_args["patch_input_shape"] = 270
-        run_args["patch_output_shape"] = 80
-
-    if sub_cmd == "tile":
-        run_args.update(
-            {
-                "input_dir": sub_args["input_dir"],
-                "output_dir": sub_args["output_dir"],
-                "mem_usage": float(sub_args["mem_usage"]),
-                "draw_dot": sub_args["draw_dot"],
-                "save_qupath": sub_args["save_qupath"],
-                "save_raw_map": sub_args["save_raw_map"],
-            }
-        )
-
-    if sub_cmd == "wsi":
-        run_args.update(
-            {
-                "input_dir": sub_args["input_dir"],
-                "output_dir": sub_args["output_dir"],
-                "input_mask_dir": sub_args["input_mask_dir"],
-                "cache_path": sub_args["cache_path"],
-                "proc_mag": int(sub_args["proc_mag"]),
-                "ambiguous_size": int(sub_args["ambiguous_size"]),
-                "chunk_shape": int(sub_args["chunk_shape"]),
-                "tile_shape": int(sub_args["tile_shape"]),
-                "save_thumb": sub_args["save_thumb"],
-                "save_mask": sub_args["save_mask"],
-            }
-        )
-    # ***
-
-    if sub_cmd == "tile":
+    if args.command == "tile":
+        run_args.update({k: getattr(args, k) for k in ["mem_usage", "draw_dot", "save_qupath", "save_raw_map"]})
         from hover_net.infer.tile import InferManager
-
-        # After parsing arguments
-        print("Parsed arguments:")
-        for key, value in args.items():
-            print(f"{key}: {value}")
-
-        # Before creating InferManager
-        run_args["batch_size"] = int(args["batch_size"])
-        print(f"run_args batch_size: {run_args['batch_size']}")
-
-        infer = InferManager(**method_args)
-        infer.process_file_list(run_args)
-    else:
+    elif args.command == "wsi":
+        run_args.update({k: getattr(args, k) for k in ["cache_path", "input_mask_dir", "proc_mag", "ambiguous_size", "chunk_shape", "tile_shape", "save_thumb", "save_mask"]})
         from hover_net.infer.wsi import InferManager
+    else:
+        raise ValueError(f"Invalid command: {args.command}")
 
-        infer = InferManager(**method_args)
-        infer.process_wsi_list(run_args)
+    InferManager(**method_args).process_file_list(run_args)
+
+if __name__ == "__main__":
+    main()
