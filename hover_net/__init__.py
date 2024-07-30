@@ -7,4 +7,4 @@ from . import run_utils
 
 __all__ = ["dataloader", "infer", "metrics", "misc", "models", "run_utils"]
 
-__version__ = "0.0.6"
+__version__ = "0.0.7"
