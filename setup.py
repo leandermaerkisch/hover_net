@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="hover-net",
-    version="0.0.7",
+    version="0.0.8",
     author="Leander Maerkisch",
     author_email="l.maerkisch@gmail.com",
     description="HoVer-Net implementation fork",
