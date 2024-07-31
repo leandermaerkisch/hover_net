@@ -24,6 +24,8 @@ from hover_net.misc.wsi_handler import get_file_handler
 
 from . import base
 
+logger = logging.getLogger(__name__)
+
 thread_lock = Lock()
 
 logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -54,6 +56,10 @@ def _get_patch_top_left_info(img_shape, input_size, output_size):
         output_size: patch output shape
 
     """
+    logger.debug(f"Input shape: {img_shape}")
+    logger.debug(f"Output shape: {input_size}")
+    logger.debug(f"Stride shape: {output_size}")
+
     in_out_diff = input_size - output_size
     nr_step = np.floor((img_shape - in_out_diff) / output_size) + 1
     last_output_coord = (in_out_diff // 2) + (nr_step) * output_size
@@ -64,11 +70,17 @@ def _get_patch_top_left_info(img_shape, input_size, output_size):
     output_tl_x_list = np.arange(
         in_out_diff[1] // 2, last_output_coord[1], output_size[1], dtype=np.int32
     )
+    logger.debug(f"output_tl_y_list: {output_tl_y_list}")
+    logger.debug(f"output_tl_x_list: {output_tl_x_list}")
+
     output_tl_y_list, output_tl_x_list = np.meshgrid(output_tl_y_list, output_tl_x_list)
     output_tl = np.stack(
         [output_tl_y_list.flatten(), output_tl_x_list.flatten()], axis=-1
     )
+    logger.debug(f"Flattened output_tl_y_list shape: {output_tl_y_list.shape}")
+    logger.debug(f"Flattened output_tl_x_list shape: {output_tl_x_list.shape}")
     input_tl = output_tl - in_out_diff // 2
+
     return input_tl, output_tl
 
 
