@@ -56,14 +56,20 @@ def _get_patch_top_left_info(img_shape, input_size, output_size):
         output_size: patch output shape
 
     """
-    logger.debug(f"Input shape: {img_shape}")
-    logger.debug(f"Output shape: {input_size}")
-    logger.debug(f"Stride shape: {output_size}")
+    logger.debug(f"img_shape: {img_shape}")
+    logger.debug(f"input_size: {input_size}")
+    logger.debug(f"output_size: {output_size}")
 
-    in_out_diff = input_size - output_size
-    nr_step = np.floor((img_shape - in_out_diff) / output_size) + 1
-    last_output_coord = (in_out_diff // 2) + (nr_step) * output_size
-    # generating subpatches index from orginal
+    in_out_diff = np.array(input_size) - np.array(output_size)
+    logger.debug(f"in_out_diff: {in_out_diff}")
+
+    nr_step = np.floor((np.array(img_shape) - in_out_diff) / np.array(output_size)) + 1
+    logger.debug(f"nr_step: {nr_step}")
+
+    last_output_coord = (in_out_diff // 2) + (nr_step * np.array(output_size))
+    logger.debug(f"last_output_coord: {last_output_coord}")
+
+    # generating subpatches index from original
     output_tl_y_list = np.arange(
         in_out_diff[0] // 2, last_output_coord[0], output_size[0], dtype=np.int32
     )
@@ -77,9 +83,10 @@ def _get_patch_top_left_info(img_shape, input_size, output_size):
     output_tl = np.stack(
         [output_tl_y_list.flatten(), output_tl_x_list.flatten()], axis=-1
     )
-    logger.debug(f"Flattened output_tl_y_list shape: {output_tl_y_list.shape}")
-    logger.debug(f"Flattened output_tl_x_list shape: {output_tl_x_list.shape}")
+    logger.debug(f"output_tl shape: {output_tl.shape}")
+
     input_tl = output_tl - in_out_diff // 2
+    logger.debug(f"input_tl shape: {input_tl.shape}")
 
     return input_tl, output_tl
 
@@ -278,13 +285,12 @@ class InferManager(base.InferManager):
         logging.debug(f"patch_top_left_list length: {len(patch_top_left_list)}")
         logging.debug(f"self.batch_size: {self.batch_size}")
 
-
         if len(patch_top_left_list) == 0:
             logging.warning("patch_top_left_list is empty, returning early")
             return []
         
         dataset = SerializeArray(
-            "%s/cache_chunk.npy" % self.cache_path,
+            f"{self.cache_path}/cache_chunk.npy",
             patch_top_left_list,
             self.patch_input_shape,
         )
@@ -302,22 +308,30 @@ class InferManager(base.InferManager):
         pbar = tqdm.tqdm(
             desc=pbar_desc,
             leave=True,
-            total=int(len(dataloader)),
+            total=len(dataloader),
             ncols=80,
             ascii=True,
         )
 
         # run inference on input patches
         accumulated_patch_output = []
-        for _, batch_data in enumerate(dataloader):
+        for batch_data in dataloader:
             sample_data_list, sample_info_list = batch_data
-            sample_output_list = self.run_step(sample_data_list)
-            sample_info_list = sample_info_list.numpy()
-            curr_batch_size = sample_output_list.shape[0]
-            sample_output_list = np.split(sample_output_list, curr_batch_size, axis=0)
-            sample_info_list = np.split(sample_info_list, curr_batch_size, axis=0)
-            sample_output_list = list(zip(sample_info_list, sample_output_list))
-            accumulated_patch_output.extend(sample_output_list)
+
+            try:
+                sample_output_list = self.run_step(sample_data_list)
+                sample_info_list = sample_info_list.numpy()
+                logging.debug(f"sample_output_list shape: {sample_output_list.shape}")
+                logging.debug(f"sample_output_list dtype: {sample_output_list.dtype}")
+
+                curr_batch_size = sample_output_list.shape[0]
+                sample_output_list = np.split(sample_output_list, curr_batch_size, axis=0)
+                sample_info_list = np.split(sample_info_list, curr_batch_size, axis=0)
+                sample_output_list = list(zip(sample_info_list, sample_output_list))
+                accumulated_patch_output.extend(sample_output_list)
+            except Exception as e:
+                logging.error(f"Error processing batch: {e}")
+                raise
             pbar.update()
         pbar.close()
         return accumulated_patch_output
@@ -366,7 +380,7 @@ class InferManager(base.InferManager):
 
         # 1 dedicated thread just to write results back to disk
         proc_pool = Pool(processes=1)
-        wsi_pred_map_mmap_path = "%s/pred_map.npy" % self.cache_path
+        wsi_pred_map_mmap_path = f"{self.cache_path}/pred_map.npy"
 
         def masking(x, a, b):
             return (a <= x) & (x <= b)
@@ -401,9 +415,9 @@ class InferManager(base.InferManager):
                 chunk_info[0][0][::-1], (chunk_info[0][1] - chunk_info[0][0])[::-1]
             )
             chunk_data = np.array(chunk_data)[..., :3]
-            np.save("%s/cache_chunk.npy" % self.cache_path, chunk_data)
+            np.save(f"{self.cache_path}/cache_chunk.npy", chunk_data)
 
-            pbar_desc = "Process Chunk %d/%d" % (idx, chunk_info_list.shape[0])
+            pbar_desc = f"Process Chunk {idx}/{chunk_info_list.shape[0]}"
             patch_output_list = self.__run_model(
                 chunk_patch_info_list[:, 0, 0], pbar_desc
             )
