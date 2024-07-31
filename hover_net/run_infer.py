@@ -42,8 +42,8 @@ def create_parser():
             sub.add_argument("--ambiguous_size", type=int, default=128, help="Ambiguous region size.")
             sub.add_argument("--chunk_shape", type=int, default=10000, help="Chunk shape for processing.")
             sub.add_argument("--tile_shape", type=int, default=2048, help="Tile shape for processing.")
-            sub.add_argument("--save_thumb", action="store_true", help="Save thumbnail.")
-            sub.add_argument("--save_mask", action="store_true", help="Save mask.")
+            sub.add_argument("--save_thumb", default=True, action="store_true", help="Save thumbnail.")
+            sub.add_argument("--save_mask", default=True, action="store_true", help="Save mask.")
         else:
             raise ValueError(f"Invalid command: {cmd}")
 
@@ -87,7 +87,7 @@ def main():
     else:
         raise ValueError(f"Invalid command: {args.command}")
 
-    InferManager(**method_args).process_file_list(run_args)
+    InferManager(**method_args).process_wsi_list(run_args)
 
 if __name__ == "__main__":
     main()

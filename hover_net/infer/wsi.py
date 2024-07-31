@@ -297,7 +297,7 @@ class InferManager(base.InferManager):
 
         # run inference on input patches
         accumulated_patch_output = []
-        for batch_idx, batch_data in enumerate(dataloader):
+        for _, batch_data in enumerate(dataloader):
             sample_data_list, sample_info_list = batch_data
             sample_output_list = self.run_step(sample_data_list)
             sample_info_list = sample_info_list.numpy()
