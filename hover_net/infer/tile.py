@@ -25,7 +25,6 @@ from hover_net.misc import convert_format
 from hover_net.infer import base
 
 
-####
 def _prepare_patching(img, window_size, mask_size, return_src_top_corner=False):
     """Prepare patch information for tile processing.
 

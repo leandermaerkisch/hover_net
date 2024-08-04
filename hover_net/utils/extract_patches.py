@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
         pbar_format = "Process File: |{bar}| {n_fmt}/{total_fmt}[{elapsed}<{remaining},{rate_fmt}]"
         pbarx = tqdm.tqdm(
-            total=len(file_list), bar_format=pbar_format, ascii=True, position=0
+            total=len(file_list), bar_format=pbar_format, ascii=True,
         )
 
         for file_idx, file_path in enumerate(file_list):
@@ -86,7 +86,6 @@ if __name__ == "__main__":
                 leave=False,
                 bar_format=pbar_format,
                 ascii=True,
-                position=1,
             )
 
             for idx, patch in enumerate(sub_patches):
