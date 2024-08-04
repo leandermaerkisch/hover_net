@@ -81,13 +81,14 @@ def main():
     if args.command == "tile":
         run_args.update({k: getattr(args, k) for k in ["mem_usage", "draw_dot", "save_qupath", "save_raw_map"]})
         from hover_net.infer.tile import InferManager
+        InferManager(**method_args).process_file_list(run_args)
     elif args.command == "wsi":
         run_args.update({k: getattr(args, k) for k in ["cache_path", "input_mask_dir", "proc_mag", "ambiguous_size", "chunk_shape", "tile_shape", "save_thumb", "save_mask"]})
         from hover_net.infer.wsi import InferManager
+        InferManager(**method_args).process_wsi_list(run_args)
     else:
         raise ValueError(f"Invalid command: {args.command}")
 
-    InferManager(**method_args).process_wsi_list(run_args)
 
 if __name__ == "__main__":
     main()
