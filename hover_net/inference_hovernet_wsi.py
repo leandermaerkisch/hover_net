@@ -5,7 +5,7 @@ import logging
 import os
 import numpy as np
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 app = modal.App("hovernet-inference-internal")
@@ -78,8 +78,8 @@ def run_hovernet_inference_wsi():
     logger.info("Initializing InferManager")
     infer = InferManager(**method_args)
 
-    logger.debug(f"InferManager class: {infer.__class__}")
-    logger.debug(f"InferManager attributes: {infer.__dict__}")
+    logger.info(f"InferManager class: {infer.__class__}")
+    logger.info(f"InferManager attributes: {infer.__dict__}")
     
     logger.info("Starting WSI processing")
 
