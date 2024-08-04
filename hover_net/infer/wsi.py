@@ -395,9 +395,6 @@ class InferManager(base.InferManager):
             try:
                 sample_output_list = self.run_step(sample_data_list)
                 sample_info_list = sample_info_list.numpy()
-                logging.debug(f"sample_output_list shape: {sample_output_list.shape}")
-                logging.debug(f"sample_output_list dtype: {sample_output_list.dtype}")
-
                 curr_batch_size = sample_output_list.shape[0]
                 sample_output_list = np.split(sample_output_list, curr_batch_size, axis=0)
                 sample_info_list = np.split(sample_info_list, curr_batch_size, axis=0)
