@@ -9,9 +9,8 @@ import logging
 import os
 import pathlib
 import time
-import sys
 import numpy as np
-from typing import Tuple
+from typing import Tuple, List
 
 import cv2
 import numpy as np
@@ -30,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 thread_lock = Lock()
 
-logging.basicConfig(level=logging.DEBUG, stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def _init_worker_child(lock_):
     global lock
@@ -103,17 +102,27 @@ def calculate_patch_coordinates(
 
     # Calculate the number of patches in each dimension
     num_patches = np.floor((image_shape - patch_size_difference) / output_patch_size).astype(int) + 1
-    logger.debug(f"Number of patches: {num_patches}")
+    logger.info(f"Number of patches: {num_patches}")
 
     # Calculate the coordinates of the last output patch
     last_patch_coord = (patch_size_difference // 2) + (num_patches * output_patch_size)
-    logger.debug(f"Last patch coordinate: {last_patch_coord}")
+    logger.info(f"Last patch coordinate: {last_patch_coord}")
+
+    # Ensure these are 1D arrays with 2 elements
+    patch_size_difference = patch_size_difference.ravel()[:2]
+    last_patch_coord = last_patch_coord.ravel()[:2]
+    output_patch_size = output_patch_size.ravel()[:2]
+
+    logger.info(f"Patch size difference after ravel: {patch_size_difference}")
+    logger.info(f"last_patch_coord after ravel: {last_patch_coord}")
+    logger.info(f"last_patch_coordafter ravel: {last_patch_coord}")
+
 
     # Generate lists of y and x coordinates for the top-left corners of output patches
     y_coords = np.arange(patch_size_difference[0] // 2, last_patch_coord[0], output_patch_size[0], dtype=np.int32)
     x_coords = np.arange(patch_size_difference[1] // 2, last_patch_coord[1], output_patch_size[1], dtype=np.int32)
-    logger.debug(f"Y coordinates: {y_coords}")
-    logger.debug(f"X coordinates: {x_coords}")
+    logger.info(f"Y coordinates: {y_coords}")
+    logger.info(f"X coordinates: {x_coords}")
 
     # Create a grid of all possible (y, x) combinations
     y_grid, x_grid = np.meshgrid(y_coords, x_coords)
@@ -121,75 +130,96 @@ def calculate_patch_coordinates(
     logger.debug(f"Output patch coordinates shape: {output_patch_coords.shape}")
 
     # Calculate the input patch coordinates
-    input_patch_coords = output_patch_coords - patch_size_difference // 2
+    input_patch_coords = output_patch_coords - patch_size_difference[np.newaxis, :] // 2
     logger.debug(f"Input patch coordinates shape: {input_patch_coords.shape}")
 
     return tuple(map(tuple, input_patch_coords)), tuple(map(tuple, output_patch_coords))
 
-#### all must be np.array
-def _get_tile_info(img_shape, tile_shape, ambiguous_size=128):
-    """Get information of tiles used for post processing.
+def _get_tile_info(
+    image_shape: Tuple[int, int],
+    tile_shape: Tuple[int, int],
+    ambiguous_size: int = 128
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Generate tile information for post-processing a large image.
+
+    This function creates three sets of tiles:
+    1. Normal tiles covering the entire image
+    2. Boundary tiles covering the edges between normal tiles
+    3. Cross tiles covering the intersections of four normal tiles
 
     Args:
-        img_shape: input image shape
-        tile_shape: tile shape used for post processing
-        ambiguous_size: used to define area at tile boundaries
+        image_shape: Shape of the input image (height, width)
+        tile_shape: Shape of each tile (height, width)
+        ambiguous_size: Size of the ambiguous region at tile boundaries
 
+    Returns:
+        A tuple containing:
+        - normal_tiles: Array of normal tile coordinates (N, 2, 2)
+        - boundary_tiles: Array of boundary tile coordinates (M, 2, 2)
+        - cross_tiles: Array of cross tile coordinates (P, 2, 2)
+        Each tile is represented by its top-left and bottom-right coordinates.
     """
-    # * get normal tiling set
-    tile_grid_top_left, _ = calculate_patch_coordinates(img_shape, tile_shape, tile_shape)
-    tile_grid_bot_right = []
-    for idx in list(range(tile_grid_top_left.shape[0])):
-        tile_tl = tile_grid_top_left[idx][:2]
-        tile_br = tile_tl + tile_shape
-        axis_sel = tile_br > img_shape
-        tile_br[axis_sel] = img_shape[axis_sel]
-        tile_grid_bot_right.append(tile_br)
-    tile_grid_bot_right = np.array(tile_grid_bot_right)
-    tile_grid = np.stack([tile_grid_top_left, tile_grid_bot_right], axis=1)
-    tile_grid_x = np.unique(tile_grid_top_left[:, 1])
-    tile_grid_y = np.unique(tile_grid_top_left[:, 0])
-    # * get tiling set to fix vertical and horizontal boundary between tiles
-    # for sanity, expand at boundary `ambiguous_size` to both side vertical and horizontal
-    def stack_coord(x):
-        return np.stack([x[0].flatten(), x[1].flatten()], axis=-1)
-    tile_boundary_x_top_left = np.meshgrid(
-        tile_grid_y, tile_grid_x[1:] - ambiguous_size
-    )
-    tile_boundary_x_bot_right = np.meshgrid(
-        tile_grid_y + tile_shape[0], tile_grid_x[1:] + ambiguous_size
-    )
-    tile_boundary_x_top_left = stack_coord(tile_boundary_x_top_left)
-    tile_boundary_x_bot_right = stack_coord(tile_boundary_x_bot_right)
-    tile_boundary_x = np.stack(
-        [tile_boundary_x_top_left, tile_boundary_x_bot_right], axis=1
-    )
+    image_shape = np.array(image_shape)
+    tile_shape = np.array(tile_shape)
 
-    tile_boundary_y_top_left = np.meshgrid(
-        tile_grid_y[1:] - ambiguous_size, tile_grid_x
-    )
-    tile_boundary_y_bot_right = np.meshgrid(
-        tile_grid_y[1:] + ambiguous_size, tile_grid_x + tile_shape[1]
-    )
-    tile_boundary_y_top_left = stack_coord(tile_boundary_y_top_left)
-    tile_boundary_y_bot_right = stack_coord(tile_boundary_y_bot_right)
-    tile_boundary_y = np.stack(
-        [tile_boundary_y_top_left, tile_boundary_y_bot_right], axis=1
-    )
-    tile_boundary = np.concatenate([tile_boundary_x, tile_boundary_y], axis=0)
-    # * get tiling set to fix the intersection of 4 tiles
-    tile_cross_top_left = np.meshgrid(
-        tile_grid_y[1:] - 2 * ambiguous_size, tile_grid_x[1:] - 2 * ambiguous_size
-    )
-    tile_cross_bot_right = np.meshgrid(
-        tile_grid_y[1:] + 2 * ambiguous_size, tile_grid_x[1:] + 2 * ambiguous_size
-    )
-    tile_cross_top_left = stack_coord(tile_cross_top_left)
-    tile_cross_bot_right = stack_coord(tile_cross_bot_right)
-    tile_cross = np.stack([tile_cross_top_left, tile_cross_bot_right], axis=1)
-    return tile_grid, tile_boundary, tile_cross
+    # Generate normal tiles
+    normal_tiles = _generate_normal_tiles(image_shape, tile_shape)
 
+    # Generate boundary tiles
+    boundary_tiles = _generate_boundary_tiles(normal_tiles, tile_shape, ambiguous_size)
 
+    # Generate cross tiles
+    cross_tiles = _generate_cross_tiles(normal_tiles, ambiguous_size)
+
+    return normal_tiles, boundary_tiles, cross_tiles
+
+def _generate_normal_tiles(image_shape: np.ndarray, tile_shape: np.ndarray) -> np.ndarray:
+    """Generate non-overlapping tiles covering the entire image."""
+    top_left_coords, _ = calculate_patch_coordinates(image_shape, tile_shape, tile_shape)
+    top_left_coords = np.array(top_left_coords)
+
+    bottom_right_coords = []
+    for top_left in top_left_coords:
+        bottom_right = np.minimum(top_left + tile_shape, image_shape)
+        bottom_right_coords.append(bottom_right)
+
+    bottom_right_coords = np.array(bottom_right_coords)
+    return np.stack([top_left_coords, bottom_right_coords], axis=1)
+
+def _generate_boundary_tiles(normal_tiles: np.ndarray, tile_shape: np.ndarray, ambiguous_size: int) -> np.ndarray:
+    """Generate tiles covering the boundaries between normal tiles."""
+    tile_grid_y = np.unique(normal_tiles[:, 0, 0])
+    tile_grid_x = np.unique(normal_tiles[:, 0, 1])
+
+    def create_boundary_tiles(coords, is_vertical):
+        if is_vertical:
+            top_left = np.meshgrid(tile_grid_y, coords - ambiguous_size)
+            bottom_right = np.meshgrid(tile_grid_y + tile_shape[0], coords + ambiguous_size)
+        else:
+            top_left = np.meshgrid(coords - ambiguous_size, tile_grid_x)
+            bottom_right = np.meshgrid(coords + ambiguous_size, tile_grid_x + tile_shape[1])
+        
+        return np.stack([_stack_coords(top_left), _stack_coords(bottom_right)], axis=1)
+
+    vertical_boundaries = create_boundary_tiles(tile_grid_x[1:], is_vertical=True)
+    horizontal_boundaries = create_boundary_tiles(tile_grid_y[1:], is_vertical=False)
+
+    return np.concatenate([vertical_boundaries, horizontal_boundaries], axis=0)
+
+def _generate_cross_tiles(normal_tiles: np.ndarray, ambiguous_size: int) -> np.ndarray:
+    """Generate tiles covering the intersections of four normal tiles."""
+    tile_grid_y = np.unique(normal_tiles[:, 0, 0])
+    tile_grid_x = np.unique(normal_tiles[:, 0, 1])
+
+    top_left = np.meshgrid(tile_grid_y[1:] - 2 * ambiguous_size, tile_grid_x[1:] - 2 * ambiguous_size)
+    bottom_right = np.meshgrid(tile_grid_y[1:] + 2 * ambiguous_size, tile_grid_x[1:] + 2 * ambiguous_size)
+
+    return np.stack([_stack_coords(top_left), _stack_coords(bottom_right)], axis=1)
+
+def _stack_coords(coords: List[np.ndarray]) -> np.ndarray:
+    """Stack coordinates into a 2D array."""
+    return np.stack([coord.flatten() for coord in coords], axis=-1)
 
 def _get_chunk_patch_info(
     img_shape, chunk_input_shape, patch_input_shape, patch_output_shape
@@ -203,8 +233,18 @@ def _get_chunk_patch_info(
         patch_output_shape: output patch shape
 
     """
+    if any(len(shape) != 2 for shape in [img_shape, chunk_input_shape, patch_input_shape, patch_output_shape]):
+        raise ValueError("All input shapes must be 2D (height, width)")
+
+    # Ensure all shapes are 1D arrays with 2 elements
+    img_shape = np.array(img_shape).ravel()[:2]
+    chunk_input_shape = np.array(chunk_input_shape).ravel()[:2]
+    patch_input_shape = np.array(patch_input_shape).ravel()[:2]
+    patch_output_shape = np.array(patch_output_shape).ravel()[:2]
+
     def round_to_multiple(x, y):
         return np.floor(x / y) * y
+
     patch_diff_shape = patch_input_shape - patch_output_shape
 
     chunk_output_shape = chunk_input_shape - patch_diff_shape
@@ -262,7 +302,6 @@ def _get_chunk_patch_info(
     return chunk_info_list, patch_info_list
 
 
-####
 def _post_proc_para_wrapper(pred_map_mmap_path, tile_info, func, func_kwargs):
     """Wrapper for parallel post processing."""
     idx, tile_tl, tile_br = tile_info
@@ -272,7 +311,6 @@ def _post_proc_para_wrapper(pred_map_mmap_path, tile_info, func, func_kwargs):
     return func(tile_pred_map, **func_kwargs), tile_info
 
 
-####
 def _assemble_and_flush(wsi_pred_map_mmap_path, chunk_info, patch_output_list):
     """Assemble the results. Write to newly created holder for this wsi"""
     wsi_pred_map_ptr = np.load(wsi_pred_map_mmap_path, mmap_mode="r+")
@@ -413,24 +451,25 @@ class InferManager(base.InferManager):
         logging.debug(f"chunk_info_list shape: {chunk_info_list.shape}")
         logging.debug(f"patch_info_list shape: {patch_info_list.shape}")
 
+        # Ensure patch_input_shape is a 1D array with 2 elements
+        self.patch_input_shape = np.array(self.patch_input_shape).ravel()[:2]
 
         # 1 dedicated thread just to write results back to disk
         proc_pool = Pool(processes=1)
         wsi_pred_map_mmap_path = f"{self.cache_path}/pred_map.npy"
 
         def masking(x, a, b):
-            return (a <= x) & (x <= b)
+            return (a[0] <= x[:, 0]) & (x[:, 0] <= b[0]) & (a[1] <= x[:, 1]) & (x[:, 1] <= b[1])
+
         for idx in range(0, chunk_info_list.shape[0]):
             chunk_info = chunk_info_list[idx]
             # select patch basing on top left coordinate of input
             start_coord = chunk_info[0, 0]
             end_coord = chunk_info[0, 1] - self.patch_input_shape
             selection = masking(
-                patch_info_list[:, 0, 0, 0], start_coord[0], end_coord[0]
-            ) & masking(patch_info_list[:, 0, 0, 1], start_coord[1], end_coord[1])
-            chunk_patch_info_list = np.array(
-                patch_info_list[selection]
-            )  # * do we need copy ?
+                patch_info_list[:, 0, 0], start_coord, end_coord
+            )
+            chunk_patch_info_list = patch_info_list[selection]
 
             # further select only the patches within the provided mask
             chunk_patch_info_list = self.__select_valid_patches(chunk_patch_info_list)
@@ -445,7 +484,7 @@ class InferManager(base.InferManager):
                 )
                 continue
 
-            # shift the coordinare from wrt slide to wrt chunk
+            # shift the coordinate from wrt slide to wrt chunk
             chunk_patch_info_list -= chunk_info[:, 0]
             chunk_data = self.wsi_handler.read_region(
                 chunk_info[0][0][::-1], (chunk_info[0][1] - chunk_info[0][0])[::-1]
@@ -768,7 +807,7 @@ class InferManager(base.InferManager):
 
         #######################
         def pbar_creator(x, y):
-            return tqdm.tqdm(desc=y, leave=True, total=int(len(x)), ncols=80, ascii=True, position=0)
+            return tqdm.tqdm(desc=y, leave=True, total=int(len(x)), ncols=80, ascii=True)
         pbar = pbar_creator(tile_grid_info, "Post Proc Phase 1")
         # * must be in sequential ordering
         self.__dispatch_post_processing(tile_grid_info, post_proc_normal_tile_callback)
