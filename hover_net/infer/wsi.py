@@ -10,6 +10,8 @@ import os
 import pathlib
 import time
 import sys
+import numpy as np
+from typing import Tuple
 
 import cv2
 import numpy as np
@@ -47,49 +49,82 @@ def _remove_inst(inst_map, remove_id_list):
     return inst_map
 
 
-def _get_patch_top_left_info(img_shape, input_size, output_size):
-    """Get top left coordinate information of patches from original image.
+def calculate_patch_coordinates(
+    image_shape: Tuple[int, int],
+    input_patch_size: Tuple[int, int],
+    output_patch_size: Tuple[int, int]
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Calculate the top-left coordinates of input and output patches for an image.
+
+    This function determines the positions of overlapping patches to be extracted
+    from an image, considering the difference between input and output patch sizes.
 
     Args:
-        img_shape: input image shape
-        input_size: patch input shape
-        output_size: patch output shape
+        image_shape (Tuple[int, int]): Shape of the input image (height, width).
+        input_patch_size (Tuple[int, int]): Size of the input patches (height, width).
+        output_patch_size (Tuple[int, int]): Size of the output patches (height, width).
 
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: Two 2D arrays containing the top-left coordinates
+        for input and output patches respectively. Each array has shape (N, 2) where N
+        is the number of patches and each row represents (y, x) coordinates.
+
+    Raises:
+        ValueError: If input sizes are invalid or incompatible.
     """
-    logger.debug(f"img_shape: {img_shape}")
-    logger.debug(f"input_size: {input_size}")
-    logger.debug(f"output_size: {output_size}")
+    logger.debug(f"Function input - image_shape: {image_shape}")
+    logger.debug(f"Function input - input_patch_size: {input_patch_size}")
+    logger.debug(f"Function input - output_patch_size: {output_patch_size}")
 
-    in_out_diff = np.array(input_size) - np.array(output_size)
-    logger.debug(f"in_out_diff: {in_out_diff}")
+    # Convert inputs to numpy arrays for consistent processing
+    image_shape = np.array(image_shape)
+    input_patch_size = np.array(input_patch_size)
+    output_patch_size = np.array(output_patch_size)
 
-    nr_step = np.floor((np.array(img_shape) - in_out_diff) / np.array(output_size)) + 1
-    logger.debug(f"nr_step: {nr_step}")
+    logger.debug(f"Converted to numpy arrays - image_shape: {image_shape}")
+    logger.debug(f"Converted to numpy arrays - input_patch_size: {input_patch_size}")
+    logger.debug(f"Converted to numpy arrays - output_patch_size: {output_patch_size}")
 
-    last_output_coord = (in_out_diff // 2) + (nr_step * np.array(output_size))
-    logger.debug(f"last_output_coord: {last_output_coord}")
+    # Validate inputs
+    if np.any(input_patch_size <= 0) or np.any(output_patch_size <= 0):
+        logger.error("Invalid patch sizes detected")
+        raise ValueError("Patch sizes must be positive.")
+    if np.any(input_patch_size < output_patch_size):
+        logger.error(f"Input patch size {input_patch_size} is smaller than output patch size {output_patch_size}")
+        raise ValueError("Input patch size must be greater than or equal to output patch size.")
+    if np.any(image_shape < input_patch_size):
+        logger.error(f"Image shape {image_shape} is smaller than input patch size {input_patch_size}")
+        raise ValueError("Image must be larger than the input patch size.")
 
-    # generating subpatches index from original
-    output_tl_y_list = np.arange(
-        in_out_diff[0] // 2, last_output_coord[0], output_size[0], dtype=np.int32
-    )
-    output_tl_x_list = np.arange(
-        in_out_diff[1] // 2, last_output_coord[1], output_size[1], dtype=np.int32
-    )
-    logger.debug(f"output_tl_y_list: {output_tl_y_list}")
-    logger.debug(f"output_tl_x_list: {output_tl_x_list}")
+    # Calculate the difference between input and output patch sizes
+    patch_size_difference = input_patch_size - output_patch_size
+    logger.debug(f"Patch size difference: {patch_size_difference}")
 
-    output_tl_y_list, output_tl_x_list = np.meshgrid(output_tl_y_list, output_tl_x_list)
-    output_tl = np.stack(
-        [output_tl_y_list.flatten(), output_tl_x_list.flatten()], axis=-1
-    )
-    logger.debug(f"output_tl shape: {output_tl.shape}")
+    # Calculate the number of patches in each dimension
+    num_patches = np.floor((image_shape - patch_size_difference) / output_patch_size).astype(int) + 1
+    logger.debug(f"Number of patches: {num_patches}")
 
-    input_tl = output_tl - in_out_diff // 2
-    logger.debug(f"input_tl shape: {input_tl.shape}")
+    # Calculate the coordinates of the last output patch
+    last_patch_coord = (patch_size_difference // 2) + (num_patches * output_patch_size)
+    logger.debug(f"Last patch coordinate: {last_patch_coord}")
 
-    return input_tl, output_tl
+    # Generate lists of y and x coordinates for the top-left corners of output patches
+    y_coords = np.arange(patch_size_difference[0] // 2, last_patch_coord[0], output_patch_size[0], dtype=np.int32)
+    x_coords = np.arange(patch_size_difference[1] // 2, last_patch_coord[1], output_patch_size[1], dtype=np.int32)
+    logger.debug(f"Y coordinates: {y_coords}")
+    logger.debug(f"X coordinates: {x_coords}")
 
+    # Create a grid of all possible (y, x) combinations
+    y_grid, x_grid = np.meshgrid(y_coords, x_coords)
+    output_patch_coords = np.stack([y_grid.flatten(), x_grid.flatten()], axis=-1)
+    logger.debug(f"Output patch coordinates shape: {output_patch_coords.shape}")
+
+    # Calculate the input patch coordinates
+    input_patch_coords = output_patch_coords - patch_size_difference // 2
+    logger.debug(f"Input patch coordinates shape: {input_patch_coords.shape}")
+
+    return tuple(map(tuple, input_patch_coords)), tuple(map(tuple, output_patch_coords))
 
 #### all must be np.array
 def _get_tile_info(img_shape, tile_shape, ambiguous_size=128):
@@ -102,7 +137,7 @@ def _get_tile_info(img_shape, tile_shape, ambiguous_size=128):
 
     """
     # * get normal tiling set
-    tile_grid_top_left, _ = _get_patch_top_left_info(img_shape, tile_shape, tile_shape)
+    tile_grid_top_left, _ = calculate_patch_coordinates(img_shape, tile_shape, tile_shape)
     tile_grid_bot_right = []
     for idx in list(range(tile_grid_top_left.shape[0])):
         tile_tl = tile_grid_top_left[idx][:2]
@@ -178,7 +213,7 @@ def _get_chunk_patch_info(
     ).astype(np.int64)
     chunk_input_shape = (chunk_output_shape + patch_diff_shape).astype(np.int64)
 
-    patch_input_tl_list, _ = _get_patch_top_left_info(
+    patch_input_tl_list, _ = calculate_patch_coordinates(
         img_shape, patch_input_shape, patch_output_shape
     )
     patch_input_br_list = patch_input_tl_list + patch_input_shape
@@ -192,9 +227,10 @@ def _get_chunk_patch_info(
         axis=1,
     )
 
-    chunk_input_tl_list, _ = _get_patch_top_left_info(
+    chunk_input_tl_list, _ = calculate_patch_coordinates(
         img_shape, chunk_input_shape, chunk_output_shape
     )
+    chunk_input_tl_list = np.array(chunk_input_tl_list)  # Convert back to numpy array
     chunk_input_br_list = chunk_input_tl_list + chunk_input_shape
     # * correct the coord so it stay within source image
     y_sel = np.nonzero(chunk_input_br_list[:, 0] > img_shape[0])[0]
