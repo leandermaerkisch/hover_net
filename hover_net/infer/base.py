@@ -8,7 +8,6 @@ import torch
 from hover_net.run_utils.utils import convert_pytorch_checkpoint
 
 
-####
 class InferManager(object):
     def __init__(self, **kwargs):
         print("InferManager initialization arguments:")

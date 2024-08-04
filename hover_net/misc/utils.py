@@ -8,12 +8,10 @@ import numpy as np
 from scipy import ndimage
 
 
-####
 def normalize(mask, dtype=np.uint8):
     return (255 * mask / np.amax(mask)).astype(dtype)
 
 
-####
 def get_bounding_box(img):
     """Get bounding box coordinate information."""
     rows = np.any(img, axis=1)
@@ -27,7 +25,6 @@ def get_bounding_box(img):
     return [rmin, rmax, cmin, cmax]
 
 
-####
 def cropping_center(x, crop_shape, batch=False):
     """Crop an input image at the centre.
 
@@ -51,7 +48,6 @@ def cropping_center(x, crop_shape, batch=False):
     return x
 
 
-####
 def rm_n_mkdir(dir_path):
     """Remove and make directory."""
     if os.path.isdir(dir_path):
@@ -59,14 +55,12 @@ def rm_n_mkdir(dir_path):
     os.makedirs(dir_path)
 
 
-####
 def mkdir(dir_path):
     """Make directory."""
     if not os.path.isdir(dir_path):
         os.makedirs(dir_path)
 
 
-####
 def get_inst_centroid(inst_map):
     """Get instance centroids given an input instance map.
 
@@ -90,7 +84,6 @@ def get_inst_centroid(inst_map):
     return np.array(inst_centroid_list)
 
 
-####
 def center_pad_to_shape(img, size, cval=255):
     """Pad input image."""
     # rounding down, add 1
@@ -106,7 +99,6 @@ def center_pad_to_shape(img, size, cval=255):
     return img
 
 
-####
 def color_deconvolution(rgb, stain_mat):
     """Apply colour deconvolution."""
     log255 = np.log(255)  # to base 10, not base e
@@ -118,7 +110,6 @@ def color_deconvolution(rgb, stain_mat):
     return output
 
 
-####
 def log_debug(msg):
     frame, filename, line_number, function_name, lines, index = inspect.getouterframes(
         inspect.currentframe()
@@ -128,7 +119,6 @@ def log_debug(msg):
     logging.debug("{i} {m}".format(i="." * indentation_level, m=msg))
 
 
-####
 def log_info(msg):
     frame, filename, line_number, function_name, lines, index = inspect.getouterframes(
         inspect.currentframe()

@@ -4,7 +4,6 @@ import json
 import torch
 
 
-####
 class BaseCallbacks(object):
     def __init__(self):
         self.engine_trigger = False
@@ -16,7 +15,6 @@ class BaseCallbacks(object):
         pass
 
 
-####
 class TrackLr(BaseCallbacks):
     """
     Add learning rate to tracking
@@ -36,7 +34,6 @@ class TrackLr(BaseCallbacks):
         return
 
 
-####
 class ScheduleLr(BaseCallbacks):
     """Trigger all scheduler."""
 
@@ -51,7 +48,6 @@ class ScheduleLr(BaseCallbacks):
         return
 
 
-####
 class TriggerEngine(BaseCallbacks):
     def __init__(self, triggered_engine_name, nr_epoch=1):
         self.engine_trigger = True
@@ -66,7 +62,6 @@ class TriggerEngine(BaseCallbacks):
         return
 
 
-####
 class PeriodicSaver(BaseCallbacks):
     """Must declare save dir first in the shared global state of the attached engine."""
 
@@ -95,7 +90,6 @@ class PeriodicSaver(BaseCallbacks):
         return
 
 
-####
 class ConditionalSaver(BaseCallbacks):
     """Must declare save dir first in the shared global state of the attached engine."""
 
@@ -148,7 +142,6 @@ class ConditionalSaver(BaseCallbacks):
         return
 
 
-####
 class AccumulateRawOutput(BaseCallbacks):
     def run(self, state, event):
         step_output = state.step_output["raw"]
@@ -162,7 +155,6 @@ class AccumulateRawOutput(BaseCallbacks):
         return
 
 
-####
 class ScalarMovingAverage(BaseCallbacks):
     """Calculate the running average for all scalar output of
     each runstep of the attached RunEngine."""
@@ -192,7 +184,6 @@ class ScalarMovingAverage(BaseCallbacks):
         return
 
 
-####
 class ProcessAccumulatedRawOutput(BaseCallbacks):
     def __init__(self, proc_func, per_n_epoch=1):
         # TODO: allow dynamically attach specific procesing for `type`
@@ -210,7 +201,6 @@ class ProcessAccumulatedRawOutput(BaseCallbacks):
         return
 
 
-####
 class VisualizeOutput(BaseCallbacks):
     def __init__(self, proc_func, per_n_epoch=1):
         super().__init__()

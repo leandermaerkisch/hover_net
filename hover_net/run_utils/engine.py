@@ -2,7 +2,6 @@ import tqdm
 from enum import Enum
 
 
-####
 class Events(Enum):
     EPOCH_STARTED = "epoch_started"
     EPOCH_COMPLETED = "epoch_completed"
@@ -13,7 +12,6 @@ class Events(Enum):
     EXCEPTION_RAISED = "exception_raised"
 
 
-####
 class State(object):
     """An object that is used to pass internal and user-defined state between event handlers."""
 
@@ -68,7 +66,6 @@ class State(object):
         return
 
 
-####
 class RunEngine(object):
     """
     TODO: Include docstring

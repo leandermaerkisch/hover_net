@@ -12,7 +12,7 @@ from .serialize import fig2data, serialize
 # TODO: logging for all printed info on the terminal
 
 
-####
+
 class LoggingGradient(BaseCallbacks):
     """Will log per each training step."""
 
@@ -82,7 +82,6 @@ class LoggingGradient(BaseCallbacks):
         return
 
 
-####
 class LoggingEpochOutput(BaseCallbacks):
     """Must declare save dir first in the shared global state of the attached engine."""
 
